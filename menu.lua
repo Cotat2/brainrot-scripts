@@ -1,5 +1,5 @@
 -- GUI Personalizada para "Roba un Brainrot"
--- Incluye: Boost Velocidad, Saltos Infinitos
+-- Incluye: Boost Velocidad, Saltos Infinitos (mejorado)
 
 -- Crear UI
 local ScreenGui = Instance.new("ScreenGui")
@@ -49,15 +49,15 @@ SpeedButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Función Saltos Infinitos
+-- Función Saltos Infinitos (mejorada, sin reiniciar personaje)
 JumpButton.MouseButton1Click:Connect(function()
     local UIS = game:GetService("UserInputService")
     local player = game.Players.LocalPlayer
-    local char = player.Character or player.CharacterAdded:Wait()
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
 
     UIS.JumpRequest:Connect(function()
-        if humanoid then
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
             humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end)
