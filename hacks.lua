@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 1.7 - Clonación)
+-- Script con menú estilo Hub para Delta (Versión Corregida 1.8 - Clonación Personalizada)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -13,30 +13,40 @@ local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
 local noclipEnabled = false
-local cloneBombEnabled = false
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
 
--- RemoteEvent para comunicarse con el servidor
+-- RemoteEvent para comunicarse con el servidor (para la nueva función)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local remoteEvent = Instance.new("RemoteEvent")
-remoteEvent.Name = "CloneObjectEvent"
+remoteEvent.Name = "ClonePlayerEvent"
 remoteEvent.Parent = ReplicatedStorage
 
--- Script del servidor que clona el objeto
+-- Script del servidor que clona el personaje
 local serverScript = Instance.new("Script")
 serverScript.Parent = ReplicatedStorage
 serverScript.Source = [[
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local remoteEvent = ReplicatedStorage:WaitForChild("CloneObjectEvent")
+    local remoteEvent = ReplicatedStorage:WaitForChild("ClonePlayerEvent")
     
-    remoteEvent.OnServerEvent:Connect(function(player, objectToClone)
-        if objectToClone and objectToClone:IsA("BasePart") then
-            local clonedObject = objectToClone:Clone()
-            clonedObject.Parent = workspace
-            clonedObject.CFrame = objectToClone.CFrame * CFrame.new(math.random(-5, 5), 5, math.random(-5, 5))
-            clonedObject.Anchored = false
+    remoteEvent.OnServerEvent:Connect(function(player, numberOfClones)
+        local originalCharacter = player.Character
+        if not originalCharacter then return end
+        
+        for i = 1, numberOfClones do
+            local clonedCharacter = originalCharacter:Clone()
+            clonedCharacter.Name = "Clon_" .. player.Name .. "_" .. i
+            
+            for _, part in pairs(clonedCharacter:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = true
+                end
+            end
+            
+            local positionOffset = Vector3.new(math.random(-10, 10), 0, math.random(-10, 10))
+            clonedCharacter:SetPrimaryPartCFrame(originalCharacter.PrimaryPart.CFrame + positionOffset)
+            clonedCharacter.Parent = workspace
         end
     end)
 ]]
@@ -170,21 +180,6 @@ local function toggleNoclip(state)
                 part.CanCollide = true
             end
         end
-    end
-end
-
--- FUNCIÓN DE CLONACIÓN CON RemoteEvent
-local function toggleCloneBomb(state)
-    cloneBombEnabled = state
-    local mouse = LocalPlayer:GetMouse()
-    if state then
-        local function onClick()
-            local target = mouse.Target
-            if target and target:IsA("BasePart") then
-                remoteEvent:FireServer(target)
-            end
-        end
-        mouse.Button1Down:Connect(onClick)
     end
 end
 
@@ -339,18 +334,45 @@ local function createMenu()
         toggleNoclip(not noclipEnabled)
         noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
     end)
-    
-    -- NUEVO BOTÓN: Clonación
-    local cloneBombButton = Instance.new("TextButton")
-    cloneBombButton.Size = UDim2.new(0, 180, 0, 40)
-    cloneBombButton.Position = UDim2.new(0, 20, 0, 320)
-    cloneBombButton.Text = "Bomba de Clonación: OFF"
-    cloneBombButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    cloneBombButton.Parent = playerTab
-    cloneBombButton.MouseButton1Click:Connect(function()
-        toggleCloneBomb(not cloneBombEnabled)
-        cloneBombButton.Text = "Bomba de Clonación: " .. (cloneBombEnabled and "ON" or "OFF")
+
+    -- NUEVA FUNCIÓN: Clonación Personalizada
+    local cloneCountLabel = Instance.new("TextLabel")
+    cloneCountLabel.Size = UDim2.new(0, 180, 0, 20)
+    cloneCountLabel.Position = UDim2.new(0, 20, 0, 20)
+    cloneCountLabel.Text = "Clones a crear (1-10)"
+    cloneCountLabel.Font = Enum.Font.SourceSans
+    cloneCountLabel.TextSize = 14
+    cloneCountLabel.TextColor3 = Color3.new(1, 1, 1)
+    cloneCountLabel.BackgroundTransparency = 1
+    cloneCountLabel.Parent = stealerTab
+
+    local cloneCountInput = Instance.new("TextBox")
+    cloneCountInput.Size = UDim2.new(0, 180, 0, 40)
+    cloneCountInput.Position = UDim2.new(0, 20, 0, 50)
+    cloneCountInput.Text = "2"
+    cloneCountInput.Font = Enum.Font.SourceSans
+    cloneCountInput.TextSize = 16
+    cloneCountInput.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    cloneCountInput.PlaceholderText = "Número de clones"
+    cloneCountInput.Parent = stealerTab
+
+    local applyCloneButton = Instance.new("TextButton")
+    applyCloneButton.Size = UDim2.new(0, 180, 0, 40)
+    applyCloneButton.Position = UDim2.new(0, 20, 0, 100)
+    applyCloneButton.Text = "Aplicar Clonación"
+    applyCloneButton.BackgroundColor3 = Color3.new(0, 0.6, 0)
+    applyCloneButton.Font = Enum.Font.SourceSansBold
+    applyCloneButton.TextSize = 16
+    applyCloneButton.Parent = stealerTab
+    applyCloneButton.MouseButton1Click:Connect(function()
+        local number = tonumber(cloneCountInput.Text)
+        if number and number >= 1 and number <= 10 then
+            remoteEvent:FireServer(number)
+        else
+            warn("Número de clones no válido. Por favor, introduce un número entre 1 y 10.")
+        end
     end)
+
 
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
