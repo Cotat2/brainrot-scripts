@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 1.9 - Noclip en Stealer)
+-- Script con menú estilo Hub para Delta (Versión Corregida 2.0 - Limpio y Funcional)
 
 -- Variables principales
 local Players = game:GetService("Players")
