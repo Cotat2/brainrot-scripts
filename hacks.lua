@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 1.8 - Clonación Personalizada)
+-- Script con menú estilo Hub para Delta (Versión Corregida 1.9 - Noclip en Stealer)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -16,40 +16,6 @@ local noclipEnabled = false
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
-
--- RemoteEvent para comunicarse con el servidor (para la nueva función)
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local remoteEvent = Instance.new("RemoteEvent")
-remoteEvent.Name = "ClonePlayerEvent"
-remoteEvent.Parent = ReplicatedStorage
-
--- Script del servidor que clona el personaje
-local serverScript = Instance.new("Script")
-serverScript.Parent = ReplicatedStorage
-serverScript.Source = [[
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local remoteEvent = ReplicatedStorage:WaitForChild("ClonePlayerEvent")
-    
-    remoteEvent.OnServerEvent:Connect(function(player, numberOfClones)
-        local originalCharacter = player.Character
-        if not originalCharacter then return end
-        
-        for i = 1, numberOfClones do
-            local clonedCharacter = originalCharacter:Clone()
-            clonedCharacter.Name = "Clon_" .. player.Name .. "_" .. i
-            
-            for _, part in pairs(clonedCharacter:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.Anchored = true
-                end
-            end
-            
-            local positionOffset = Vector3.new(math.random(-10, 10), 0, math.random(-10, 10))
-            clonedCharacter:SetPrimaryPartCFrame(originalCharacter.PrimaryPart.CFrame + positionOffset)
-            clonedCharacter.Parent = workspace
-        end
-    end)
-]]
 
 -- Función para manejar el Salto Múltiple
 local function handleJump(humanoid)
@@ -279,6 +245,7 @@ local function createMenu()
 
     changeTab(mainTab)
 
+    -- Player Tab
     local multipleJumpButton = Instance.new("TextButton")
     multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
     multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
@@ -324,55 +291,17 @@ local function createMenu()
         speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
     end)
 
+    -- Stealer Tab
     local noclipButton = Instance.new("TextButton")
     noclipButton.Size = UDim2.new(0, 180, 0, 40)
-    noclipButton.Position = UDim2.new(0, 20, 0, 260)
+    noclipButton.Position = UDim2.new(0, 20, 0, 20)
     noclipButton.Text = "Noclip: OFF"
     noclipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    noclipButton.Parent = playerTab
+    noclipButton.Parent = stealerTab
     noclipButton.MouseButton1Click:Connect(function()
         toggleNoclip(not noclipEnabled)
         noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
     end)
-
-    -- NUEVA FUNCIÓN: Clonación Personalizada
-    local cloneCountLabel = Instance.new("TextLabel")
-    cloneCountLabel.Size = UDim2.new(0, 180, 0, 20)
-    cloneCountLabel.Position = UDim2.new(0, 20, 0, 20)
-    cloneCountLabel.Text = "Clones a crear (1-10)"
-    cloneCountLabel.Font = Enum.Font.SourceSans
-    cloneCountLabel.TextSize = 14
-    cloneCountLabel.TextColor3 = Color3.new(1, 1, 1)
-    cloneCountLabel.BackgroundTransparency = 1
-    cloneCountLabel.Parent = stealerTab
-
-    local cloneCountInput = Instance.new("TextBox")
-    cloneCountInput.Size = UDim2.new(0, 180, 0, 40)
-    cloneCountInput.Position = UDim2.new(0, 20, 0, 50)
-    cloneCountInput.Text = "2"
-    cloneCountInput.Font = Enum.Font.SourceSans
-    cloneCountInput.TextSize = 16
-    cloneCountInput.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-    cloneCountInput.PlaceholderText = "Número de clones"
-    cloneCountInput.Parent = stealerTab
-
-    local applyCloneButton = Instance.new("TextButton")
-    applyCloneButton.Size = UDim2.new(0, 180, 0, 40)
-    applyCloneButton.Position = UDim2.new(0, 20, 0, 100)
-    applyCloneButton.Text = "Aplicar Clonación"
-    applyCloneButton.BackgroundColor3 = Color3.new(0, 0.6, 0)
-    applyCloneButton.Font = Enum.Font.SourceSansBold
-    applyCloneButton.TextSize = 16
-    applyCloneButton.Parent = stealerTab
-    applyCloneButton.MouseButton1Click:Connect(function()
-        local number = tonumber(cloneCountInput.Text)
-        if number and number >= 1 and number <= 10 then
-            remoteEvent:FireServer(number)
-        else
-            warn("Número de clones no válido. Por favor, introduce un número entre 1 y 10.")
-        end
-    end)
-
 
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
