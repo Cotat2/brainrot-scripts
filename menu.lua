@@ -1,4 +1,5 @@
 -- Script con menú para Delta
+-- Incluye Salto Infinito con retraso aleatorio, Wallhack y Atraviesa Muros
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -12,18 +13,28 @@ local infiniteJumpEnabled = false
 local wallhackEnabled = false
 local noClipEnabled = false
 
+-- Función para manejar el salto infinito
+local function handleInfiniteJump(state)
+    -- Si el estado es "en el suelo" o "cayendo"
+    if state == Enum.HumanoidStateType.Landed or state == Enum.HumanoidStateType.Freefall then
+        -- Verificamos si la función está activada
+        if infiniteJumpEnabled then
+            -- Esperamos una pequeña cantidad de tiempo aleatoria
+            local minDelay = 0.05
+            local maxDelay = 0.15
+            wait(math.random() * (maxDelay - minDelay) + minDelay)
+            -- Activamos el salto
+            Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end
+
 -- Función para activar o desactivar el Salto Infinito
 local function toggleInfiniteJump(state)
     infiniteJumpEnabled = state
     if state then
-        Humanoid.StateChanged:Connect(function(oldState, newState)
-            if newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Freefall then
-                if infiniteJumpEnabled then
-                    wait()
-                    Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
-            end
-        end)
+        -- Conectamos la función de salto al cambio de estado del humanoide
+        Humanoid.StateChanged:Connect(handleInfiniteJump)
     end
 end
 
@@ -33,7 +44,6 @@ local function toggleWallhack(state)
     if state then
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character.Humanoid then
-                -- Crea una etiqueta sobre la cabeza del jugador
                 local head = player.Character:WaitForChild("Head")
                 if head and head:FindFirstChild("PlayerESP") == nil then
                     local billboardGui = Instance.new("BillboardGui")
@@ -47,7 +57,7 @@ local function toggleWallhack(state)
                     textLabel.Size = UDim2.new(1, 0, 1, 0)
                     textLabel.Font = Enum.Font.SourceSans
                     textLabel.TextSize = 14
-                    textLabel.TextColor3 = Color3.new(1, 0, 0) -- Color rojo
+                    textLabel.TextColor3 = Color3.new(1, 0, 0)
                     textLabel.BackgroundTransparency = 1
                     textLabel.Parent = billboardGui
 
