@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 2.4 - Noclip Avanzado)
+-- Script con menú estilo Hub para Delta (Versión Final 2.5 - Noclip Mejorado)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -13,6 +13,7 @@ local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
 local advancedNoclipEnabled = false
+local noclipLoop = nil
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
@@ -129,12 +130,13 @@ local function toggleSpeedHack(state)
     end
 end
 
--- FUNCIÓN NUEVA: Noclip Avanzado
+-- FUNCIÓN CORREGIDA: Noclip Avanzado
 local function toggleAdvancedNoclip(state)
     advancedNoclipEnabled = state
 
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
     
     if state then
         -- Desactiva la colisión localmente
@@ -143,25 +145,31 @@ local function toggleAdvancedNoclip(state)
                 part.CanCollide = false
             end
         end
+        humanoid.WalkSpeed = 30 -- Se ajusta la velocidad para un movimiento más fluido en Noclip
 
-        local noclipLoop
         noclipLoop = RunService.Heartbeat:Connect(function()
-            if advancedNoclipEnabled and UserInputService:IsKeyDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                local currentCFrame = humanoidRootPart.CFrame
-                local newPosition = currentCFrame.p + currentCFrame.LookVector * 1.5
-                humanoidRootPart.CFrame = CFrame.new(newPosition)
+            if advancedNoclipEnabled then
+                local moveDirection = humanoid.MoveDirection
+                if moveDirection.Magnitude > 0 then
+                    local newPosition = humanoidRootPart.CFrame.p + moveDirection * 1
+                    humanoidRootPart.CFrame = CFrame.new(newPosition)
+                end
             end
         end)
     else
-        -- Restaura la colisión
+        -- Restaura la colisión, la velocidad y desconecta el loop
         for _, part in pairs(character:GetChildren()) do
             if part:IsA("BasePart") then
                 part.CanCollide = true
             end
         end
+        humanoid.WalkSpeed = 16
+        if noclipLoop then
+            noclipLoop:Disconnect()
+            noclipLoop = nil
+        end
     end
 end
-
 
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
