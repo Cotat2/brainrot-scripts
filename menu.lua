@@ -1,14 +1,21 @@
--- Script con menú estilo Hub para Delta (Versión Corregida Definitiva)
+-- Script con menú estilo Hub para Delta (Versión Experimental)
+-- ADVERTENCIA: La función "Modo Fantasma" es altamente inestable y es casi seguro que serás detectado y expulsado del juego. Úsala bajo tu propia responsabilidad.
 
 -- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 -- Estado de las funciones
 local multipleJumpEnabled = false
 local wallhackEnabled = false
+local ghostModeEnabled = false
 local lastMenuInstance = nil
+
+-- Variables para el Modo Fantasma
+local ghostCFrame
+local ghostModeConnection
 
 -- Función para manejar el Salto Múltiple
 local function handleJump(humanoid)
@@ -70,6 +77,37 @@ local function toggleWallhack(state)
     end
 end
 
+-- Función para el Modo Fantasma
+local function toggleGhostMode(state)
+    ghostModeEnabled = state
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+
+    if state then
+        ghostCFrame = humanoidRootPart.CFrame
+        -- Mantenemos todas las partes del avatar en la posición inicial en cada frame
+        ghostModeConnection = RunService.Heartbeat:Connect(function()
+            if ghostModeEnabled and character then
+                for _, part in pairs(character:GetChildren()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.CFrame = ghostCFrame
+                    end
+                end
+            end
+        end)
+    else
+        -- Desactivamos la conexión y permitimos que el avatar se mueva libremente
+        if ghostModeConnection then
+            ghostModeConnection:Disconnect()
+            ghostModeConnection = nil
+        end
+    end
+end
+
+
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
     local playerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -81,7 +119,8 @@ local function createMenu()
     screenGui.Name = "HubMenu"
     screenGui.Parent = playerGui
     
-    -- Creamos el Frame principal del menú
+    -- ... (Código del menú, sin cambios) ...
+
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 500, 0, 400)
     mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
@@ -91,7 +130,6 @@ local function createMenu()
     mainFrame.Draggable = true
     mainFrame.Parent = screenGui
 
-    -- Creamos la barra de navegación lateral
     local navFrame = Instance.new("Frame")
     navFrame.Size = UDim2.new(0, 150, 1, 0)
     navFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
@@ -106,7 +144,6 @@ local function createMenu()
     titleLabel.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
     titleLabel.Parent = navFrame
 
-    -- Creamos los botones de las pestañas
     local function createTabButton(text, yOffset)
         local button = Instance.new("TextButton")
         button.Size = UDim2.new(1, 0, 0, 40)
@@ -130,14 +167,12 @@ local function createMenu()
     local serverButton = createTabButton("  Server", 240)
     local discordButton = createTabButton("  Discord!", 280)
 
-    -- Creamos el área de contenido
     local contentFrame = Instance.new("Frame")
     contentFrame.Size = UDim2.new(1, -150, 1, -40)
     contentFrame.Position = UDim2.new(0, 150, 0, 40)
     contentFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     contentFrame.Parent = mainFrame
 
-    -- Función para cambiar de pestaña
     local currentTab
     local function changeTab(tabFrame)
         if currentTab then
@@ -147,7 +182,6 @@ local function createMenu()
         currentTab.Visible = true
     end
 
-    -- Creamos las pestañas (frames de contenido)
     local mainTab = Instance.new("Frame")
     mainTab.Size = UDim2.new(1, 0, 1, 0)
     mainTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
@@ -166,14 +200,12 @@ local function createMenu()
     stealerTab.Parent = contentFrame
     stealerTab.Visible = false
 
-    -- Conectamos los botones a las pestañas
     mainButton.MouseButton1Click:Connect(function() changeTab(mainTab) end)
     playerButton.MouseButton1Click:Connect(function() changeTab(playerTab) end)
     stealerButton.MouseButton1Click:Connect(function() changeTab(stealerTab) end)
 
     changeTab(mainTab)
 
-    -- Creamos los botones de las funciones en la pestaña "Player"
     local multipleJumpButton = Instance.new("TextButton")
     multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
     multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
@@ -196,8 +228,19 @@ local function createMenu()
         toggleWallhack(not wallhackEnabled)
         wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
     end)
+
+    -- Botón de la nueva función "Modo Fantasma"
+    local ghostModeButton = Instance.new("TextButton")
+    ghostModeButton.Size = UDim2.new(0, 180, 0, 40)
+    ghostModeButton.Position = UDim2.new(0, 20, 0, 140)
+    ghostModeButton.Text = "Modo Fantasma: OFF"
+    ghostModeButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    ghostModeButton.Parent = playerTab
+    ghostModeButton.MouseButton1Click:Connect(function()
+        toggleGhostMode(not ghostModeEnabled)
+        ghostModeButton.Text = "Modo Fantasma: " .. (ghostModeEnabled and "ON" or "OFF")
+    end)
     
-    -- Botón para ocultar el menú
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
     hideButton.Position = UDim2.new(1, -25, 0, 5)
@@ -208,7 +251,6 @@ local function createMenu()
     hideButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
     hideButton.Parent = mainFrame
 
-    -- Botón para mostrar el menú (el "logo" discreto)
     local showButton = Instance.new("TextButton")
     showButton.Size = UDim2.new(0, 50, 0, 50)
     showButton.Position = UDim2.new(0.5, -25, 0.5, -25)
@@ -220,7 +262,6 @@ local function createMenu()
     showButton.Visible = false
     showButton.Parent = screenGui
 
-    -- Conexión de los botones para ocultar/mostrar
     hideButton.MouseButton1Click:Connect(function()
         mainFrame.Visible = false
         showButton.Visible = true
@@ -246,7 +287,6 @@ end
 
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
 
--- Ejecutamos la función si el personaje ya existe
 if LocalPlayer.Character then
     onCharacterAdded(LocalPlayer.Character)
 end
