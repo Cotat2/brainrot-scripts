@@ -1,5 +1,5 @@
--- Script con menú para Delta (Versión final)
--- Incluye Salto Múltiple, Salto Potenciado (ajustable) y Wallhack (ESP)
+-- Script con menú para Delta (Versión corregida)
+-- Incluye Salto Múltiple, Salto Potenciado (ajustable con botón) y Wallhack (ESP)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -15,7 +15,7 @@ local jumpBoostEnabled = false
 
 -- Valor del salto potenciado
 local originalJumpPower = Humanoid.JumpPower
-local jumpBoostValue = 200 -- Valor por defecto
+local jumpBoostValue = 50 -- Valor por defecto
 
 -- Función para manejar el Salto Múltiple
 local function handleJump()
@@ -38,21 +38,29 @@ local function toggleMultipleJump(state)
     end
 end
 
--- Función para activar o desactivar el Salto Potenciado
-local function toggleJumpBoost(state)
-    jumpBoostEnabled = state
-    if state then
+-- Función para actualizar el valor del Salto Potenciado
+local function updateJumpBoost()
+    if jumpBoostEnabled then
         Humanoid.JumpPower = originalJumpPower + jumpBoostValue
     else
         Humanoid.JumpPower = originalJumpPower
     end
 end
 
--- Función para actualizar el valor del Salto Potenciado desde el TextBox
-local function updateJumpBoostValue(text)
+-- Función para activar o desactivar el Salto Potenciado
+local function toggleJumpBoost(state)
+    jumpBoostEnabled = state
+    updateJumpBoost()
+end
+
+-- Función para aplicar el valor del TextBox
+local function applyJumpBoostValue(text)
     local num = tonumber(text)
     if num then
         jumpBoostValue = num
+        if jumpBoostEnabled then
+            updateJumpBoost()
+        end
     end
 end
 
@@ -150,17 +158,23 @@ jumpBoostTextBox.TextSize = 14
 jumpBoostTextBox.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
 jumpBoostTextBox.Parent = frame
 
-jumpBoostTextBox.FocusLost:Connect(function()
-    updateJumpBoostValue(jumpBoostTextBox.Text)
-    if jumpBoostEnabled then
-        toggleJumpBoost(false)
-        toggleJumpBoost(true)
-    end
+local applyButton = Instance.new("TextButton")
+applyButton.Size = UDim2.new(0, 60, 0, 20)
+applyButton.Position = UDim2.new(0, 120, 0, 120)
+applyButton.Text = "Aplicar"
+applyButton.Font = Enum.Font.SourceSansBold
+applyButton.TextSize = 14
+applyButton.TextColor3 = Color3.new(1, 1, 1)
+applyButton.BackgroundColor3 = Color3.new(0, 0.5, 0) -- Color verde
+applyButton.Parent = frame
+
+applyButton.MouseButton1Click:Connect(function()
+    applyJumpBoostValue(jumpBoostTextBox.Text)
 end)
 
 local wallhackButton = Instance.new("TextButton")
 wallhackButton.Size = UDim2.new(1, -20, 0, 40)
-wallhackButton.Position = UDim2.new(0, 10, 0, 140)
+wallhackButton.Position = UDim2.new(0, 10, 0, 160)
 wallhackButton.Text = "Wallhack (ESP): OFF"
 wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
 wallhackButton.Parent = frame
@@ -172,7 +186,7 @@ end)
 
 local jumpBoostToggleButton = Instance.new("TextButton")
 jumpBoostToggleButton.Size = UDim2.new(1, -20, 0, 40)
-jumpBoostToggleButton.Position = UDim2.new(0, 10, 0, 190)
+jumpBoostToggleButton.Position = UDim2.new(0, 10, 0, 210)
 jumpBoostToggleButton.Text = "Activar Salto Potenciado: OFF"
 jumpBoostToggleButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
 jumpBoostToggleButton.Parent = frame
