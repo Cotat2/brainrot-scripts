@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 2.0 - Limpio y Funcional)
+-- Script con menú estilo Hub para Delta (Versión Final 2.4 - Noclip Avanzado)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -12,7 +12,7 @@ local multipleJumpEnabled = false
 local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
-local noclipEnabled = false
+local advancedNoclipEnabled = false
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
@@ -129,18 +129,31 @@ local function toggleSpeedHack(state)
     end
 end
 
--- Función para activar o desactivar el Noclip
-local function toggleNoclip(state)
-    noclipEnabled = state
+-- FUNCIÓN NUEVA: Noclip Avanzado
+local function toggleAdvancedNoclip(state)
+    advancedNoclipEnabled = state
+
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     
     if state then
+        -- Desactiva la colisión localmente
         for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            if part:IsA("BasePart") then
                 part.CanCollide = false
             end
         end
+
+        local noclipLoop
+        noclipLoop = RunService.Heartbeat:Connect(function()
+            if advancedNoclipEnabled and UserInputService:IsKeyDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                local currentCFrame = humanoidRootPart.CFrame
+                local newPosition = currentCFrame.p + currentCFrame.LookVector * 1.5
+                humanoidRootPart.CFrame = CFrame.new(newPosition)
+            end
+        end)
     else
+        -- Restaura la colisión
         for _, part in pairs(character:GetChildren()) do
             if part:IsA("BasePart") then
                 part.CanCollide = true
@@ -148,6 +161,7 @@ local function toggleNoclip(state)
         end
     end
 end
+
 
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
@@ -290,18 +304,28 @@ local function createMenu()
         toggleSpeedHack(not speedHackEnabled)
         speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
     end)
-
+    
     -- Stealer Tab
-    local noclipButton = Instance.new("TextButton")
-    noclipButton.Size = UDim2.new(0, 180, 0, 40)
-    noclipButton.Position = UDim2.new(0, 20, 0, 20)
-    noclipButton.Text = "Noclip: OFF"
-    noclipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    noclipButton.Parent = stealerTab
-    noclipButton.MouseButton1Click:Connect(function()
-        toggleNoclip(not noclipEnabled)
-        noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
+    local advancedNoclipButton = Instance.new("TextButton")
+    advancedNoclipButton.Size = UDim2.new(0, 180, 0, 40)
+    advancedNoclipButton.Position = UDim2.new(0, 20, 0, 20)
+    advancedNoclipButton.Text = "Noclip Avanzado: OFF"
+    advancedNoclipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    advancedNoclipButton.Parent = stealerTab
+    advancedNoclipButton.MouseButton1Click:Connect(function()
+        toggleAdvancedNoclip(not advancedNoclipEnabled)
+        advancedNoclipButton.Text = "Noclip Avanzado: " .. (advancedNoclipEnabled and "ON" or "OFF")
     end)
+
+    local noclipInstructions = Instance.new("TextLabel")
+    noclipInstructions.Size = UDim2.new(0, 180, 0, 40)
+    noclipInstructions.Position = UDim2.new(0, 20, 0, 60)
+    noclipInstructions.BackgroundTransparency = 1
+    noclipInstructions.Font = Enum.Font.SourceSans
+    noclipInstructions.TextSize = 12
+    noclipInstructions.TextColor3 = Color3.new(1, 1, 1)
+    noclipInstructions.Text = "Activa y usa W,A,S,D para moverte."
+    noclipInstructions.Parent = stealerTab
 
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
