@@ -1,6 +1,7 @@
--- Script mejorado para Atravesar Muros
--- Este script manipula el CFrame de tu personaje para moverlo.
+-- Script con menú para Delta (Versión final)
+-- Incluye Salto Múltiple, Salto Potenciado (ajustable) y Wallhack (ESP)
 
+-- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -8,13 +9,17 @@ local Humanoid = Character:WaitForChild("Humanoid")
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 -- Estado de las funciones
-local infiniteJumpEnabled = false
+local multipleJumpEnabled = false
 local wallhackEnabled = false
-local noclipEnabled = false
+local jumpBoostEnabled = false
+
+-- Valor del salto potenciado
+local originalJumpPower = Humanoid.JumpPower
+local jumpBoostValue = 50 -- Valor por defecto
 
 -- Función para manejar el Salto Múltiple
 local function handleJump()
-    if infiniteJumpEnabled then
+    if multipleJumpEnabled then
         if Humanoid.Health > 0 then
             Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
@@ -22,14 +27,32 @@ local function handleJump()
 end
 
 -- Función para activar o desactivar el Salto Múltiple
-local function toggleInfiniteJump(state)
-    infiniteJumpEnabled = state
+local function toggleMultipleJump(state)
+    multipleJumpEnabled = state
     if state then
         game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessedEvent)
             if input.KeyCode == Enum.KeyCode.Space then
                 handleJump()
             end
         end)
+    end
+end
+
+-- Función para activar o desactivar el Salto Potenciado
+local function toggleJumpBoost(state)
+    jumpBoostEnabled = state
+    if state then
+        Humanoid.JumpPower = originalJumpPower + jumpBoostValue
+    else
+        Humanoid.JumpPower = originalJumpPower
+    end
+end
+
+-- Función para actualizar el valor del Salto Potenciado desde el TextBox
+local function updateJumpBoostValue(text)
+    local num = tonumber(text)
+    if num then
+        jumpBoostValue = num
     end
 end
 
@@ -72,53 +95,6 @@ local function toggleWallhack(state)
     end
 end
 
--- **Función para el nuevo script de Atravesar Muros**
-local function toggleNoclip(state)
-    noclipEnabled = state
-    if state then
-        -- Desactiva la colisión solo de forma local
-        for _, child in ipairs(Character:GetChildren()) do
-            if child:IsA("BasePart") then
-                child.CanCollide = false
-            end
-        end
-
-        -- Conecta la función a cada frame del juego
-        game:GetService("RunService").Heartbeat:Connect(function()
-            if noclipEnabled then
-                -- Mueve el personaje según la cámara, pero solo si no choca
-                local newCFrame = HumanoidRootPart.CFrame
-                local lookVector = game.Workspace.CurrentCamera.CFrame.lookVector
-                local moveVector = Vector3.new()
-
-                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
-                    moveVector = moveVector + lookVector
-                end
-                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
-                    moveVector = moveVector - lookVector
-                end
-                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
-                    moveVector = moveVector - lookVector:Cross(Vector3.new(0, 1, 0))
-                end
-                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
-                    moveVector = moveVector + lookVector:Cross(Vector3.new(0, 1, 0))
-                end
-
-                if moveVector ~= Vector3.new() then
-                    HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + moveVector.Unit * Humanoid.WalkSpeed * 0.05
-                end
-            end
-        end)
-    else
-        -- Vuelve a activar la colisión
-        for _, child in ipairs(Character:GetChildren()) do
-            if child:IsA("BasePart") then
-                child.CanCollide = true
-            end
-        end
-    end
-end
-
 -- Creamos el menú
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenu"
@@ -142,21 +118,49 @@ title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 title.Parent = frame
 
-local infiniteJumpButton = Instance.new("TextButton")
-infiniteJumpButton.Size = UDim2.new(1, -20, 0, 40)
-infiniteJumpButton.Position = UDim2.new(0, 10, 0, 40)
-infiniteJumpButton.Text = "Salto Múltiple: OFF"
-infiniteJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-infiniteJumpButton.Parent = frame
+local multipleJumpButton = Instance.new("TextButton")
+multipleJumpButton.Size = UDim2.new(1, -20, 0, 40)
+multipleJumpButton.Position = UDim2.new(0, 10, 0, 40)
+multipleJumpButton.Text = "Salto Múltiple: OFF"
+multipleJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+multipleJumpButton.Parent = frame
 
-infiniteJumpButton.MouseButton1Click:Connect(function()
-    toggleInfiniteJump(not infiniteJumpEnabled)
-    infiniteJumpButton.Text = "Salto Múltiple: " .. (infiniteJumpEnabled and "ON" or "OFF")
+multipleJumpButton.MouseButton1Click:Connect(function()
+    toggleMultipleJump(not multipleJumpEnabled)
+    multipleJumpButton.Text = "Salto Múltiple: " .. (multipleJumpEnabled and "ON" or "OFF")
+end)
+
+local jumpBoostLabel = Instance.new("TextLabel")
+jumpBoostLabel.Size = UDim2.new(0, 100, 0, 20)
+jumpBoostLabel.Position = UDim2.new(0, 10, 0, 90)
+jumpBoostLabel.Text = "Salto Potenciado:"
+jumpBoostLabel.Font = Enum.Font.SourceSans
+jumpBoostLabel.TextSize = 14
+jumpBoostLabel.TextColor3 = Color3.new(1, 1, 1)
+jumpBoostLabel.BackgroundTransparency = 1
+jumpBoostLabel.Parent = frame
+
+local jumpBoostTextBox = Instance.new("TextBox")
+jumpBoostTextBox.Size = UDim2.new(0, 60, 0, 20)
+jumpBoostTextBox.Position = UDim2.new(0, 120, 0, 90)
+jumpBoostTextBox.PlaceholderText = tostring(jumpBoostValue)
+jumpBoostTextBox.Text = tostring(jumpBoostValue)
+jumpBoostTextBox.Font = Enum.Font.SourceSans
+jumpBoostTextBox.TextSize = 14
+jumpBoostTextBox.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+jumpBoostTextBox.Parent = frame
+
+jumpBoostTextBox.FocusLost:Connect(function()
+    updateJumpBoostValue(jumpBoostTextBox.Text)
+    if jumpBoostEnabled then
+        toggleJumpBoost(false)
+        toggleJumpBoost(true)
+    end
 end)
 
 local wallhackButton = Instance.new("TextButton")
 wallhackButton.Size = UDim2.new(1, -20, 0, 40)
-wallhackButton.Position = UDim2.new(0, 10, 0, 90)
+wallhackButton.Position = UDim2.new(0, 10, 0, 140)
 wallhackButton.Text = "Wallhack (ESP): OFF"
 wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
 wallhackButton.Parent = frame
@@ -166,14 +170,14 @@ wallhackButton.MouseButton1Click:Connect(function()
     wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
 end)
 
-local noClipButton = Instance.new("TextButton")
-noClipButton.Size = UDim2.new(1, -20, 0, 40)
-noClipButton.Position = UDim2.new(0, 10, 0, 140)
-noClipButton.Text = "Atraviesa Muros: OFF"
-noClipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-noClipButton.Parent = frame
+local jumpBoostToggleButton = Instance.new("TextButton")
+jumpBoostToggleButton.Size = UDim2.new(1, -20, 0, 40)
+jumpBoostToggleButton.Position = UDim2.new(0, 10, 0, 190)
+jumpBoostToggleButton.Text = "Activar Salto Potenciado: OFF"
+jumpBoostToggleButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+jumpBoostToggleButton.Parent = frame
 
-noClipButton.MouseButton1Click:Connect(function()
-    toggleNoclip(not noclipEnabled)
-    noClipButton.Text = "Atraviesa Muros: " .. (noclipEnabled and "ON" or "OFF")
+jumpBoostToggleButton.MouseButton1Click:Connect(function()
+    toggleJumpBoost(not jumpBoostEnabled)
+    jumpBoostToggleButton.Text = "Activar Salto Potenciado: " .. (jumpBoostEnabled and "ON" or "OFF")
 end)
