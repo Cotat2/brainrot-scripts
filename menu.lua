@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 1.2)
+-- Script con menú estilo Hub para Delta (Versión Corregida 1.3 - Final)
 -- ADVERTENCIA: La función "Invisibilidad Falsa" es una ilusión para tu pantalla. Otros jugadores te verán moverse, y es muy probable que te detecten.
 
 -- Variables principales
@@ -78,7 +78,6 @@ end
 
 -- Función para la Invisibilidad Falsa
 local function toggleFakeInvisibility(state)
-    fakeInvisibilityEnabled = state
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     
     if state then
@@ -241,7 +240,8 @@ local function createMenu()
     ghostModeButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     ghostModeButton.Parent = playerTab
     ghostModeButton.MouseButton1Click:Connect(function()
-        toggleFakeInvisibility(not fakeInvisibilityEnabled)
+        fakeInvisibilityEnabled = not fakeInvisibilityEnabled
+        toggleFakeInvisibility(fakeInvisibilityEnabled)
         ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
     end)
     
@@ -291,6 +291,4 @@ end
 
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
 
-if LocalPlayer.Character then
-    onCharacterAdded(LocalPlayer.Character)
-end
+if LocalPlayer.Character
