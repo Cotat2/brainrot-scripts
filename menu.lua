@@ -1,20 +1,14 @@
--- Script con menú estilo Hub para Delta (Versión 2.0)
--- ADVERTENCIA: Esta función es una ilusión visual. Otros jugadores verán tu avatar real, y es probable que te detecten.
+-- Script con menú estilo Hub para Delta (Versión Final sin errores)
 
 -- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local lastMenuInstance = nil
 
 -- Estado de las funciones
 local multipleJumpEnabled = false
 local wallhackEnabled = false
-local fakeInvisibilityEnabled = false
-
--- Variables para la Invisibilidad Falsa
-local ghostClone = nil
 
 -- Función para manejar el Salto Múltiple
 local function handleJump(humanoid)
@@ -76,54 +70,6 @@ local function toggleWallhack(state)
     end
 end
 
--- Función para la Invisibilidad Falsa
-local function toggleFakeInvisibility(state)
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    
-    if state then
-        -- Desactivar el avatar visible del jugador
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") or part:IsA("Decal") or part:IsA("MeshPart") then
-                part.LocalTransparencyModifier = 1
-            end
-        end
-
-        -- Crear y posicionar un clon del avatar en la posición actual
-        ghostClone = character:Clone()
-        ghostClone.Name = "GhostClone"
-        ghostClone.Parent = workspace
-        
-        -- Congelar el clon para que se quede quieto
-        local ghostHumanoid = ghostClone:FindFirstChildOfClass("Humanoid")
-        if ghostHumanoid then
-            ghostHumanoid.Health = 0
-            ghostHumanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-        end
-        
-        -- Hacer las partes del clon inamovibles y sin colisiones
-        for _, part in pairs(ghostClone:GetChildren()) do
-            if part:IsA("BasePart") then
-                part.Anchored = true
-                part.CanCollide = false
-            end
-        end
-        
-    else
-        -- Eliminar el clon
-        if ghostClone then
-            ghostClone:Destroy()
-            ghostClone = nil
-        end
-        
-        -- Restaurar la visibilidad del avatar real
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") or part:IsA("Decal") or part:IsA("MeshPart") then
-                part.LocalTransparencyModifier = 0
-            end
-        end
-    end
-end
-
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
     local playerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -135,18 +81,21 @@ local function createMenu()
     screenGui.Name = "HubMenu"
     screenGui.Parent = playerGui
     
+    -- Creamos el Frame principal del menú con color y transparencia
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 500, 0, 400)
     mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
-    mainFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    mainFrame.BackgroundColor3 = Color3.new(1, 0.843, 0) -- Amarillo
+    mainFrame.BackgroundTransparency = 0.3 -- Un poco de transparencia
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
     mainFrame.Parent = screenGui
 
+    -- Creamos la barra de navegación lateral
     local navFrame = Instance.new("Frame")
     navFrame.Size = UDim2.new(0, 150, 1, 0)
-    navFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    navFrame.BackgroundColor3 = Color3.new(0.8, 0.67, 0) -- Amarillo más oscuro
     navFrame.Parent = mainFrame
 
     local titleLabel = Instance.new("TextLabel")
@@ -154,10 +103,11 @@ local function createMenu()
     titleLabel.Text = "Chilli Hub"
     titleLabel.Font = Enum.Font.SourceSansBold
     titleLabel.TextSize = 20
-    titleLabel.TextColor3 = Color3.new(1, 1, 1)
-    titleLabel.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
+    titleLabel.TextColor3 = Color3.new(0, 0, 0) -- Texto negro
+    titleLabel.BackgroundColor3 = Color3.new(0.7, 0.6, 0) -- Amarillo aún más oscuro
     titleLabel.Parent = navFrame
 
+    -- Creamos los botones de las pestañas
     local function createTabButton(text, yOffset)
         local button = Instance.new("TextButton")
         button.Size = UDim2.new(1, 0, 0, 40)
@@ -165,8 +115,8 @@ local function createMenu()
         button.Text = text
         button.Font = Enum.Font.SourceSansBold
         button.TextSize = 16
-        button.TextColor3 = Color3.new(0.6, 0.6, 0.6)
-        button.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+        button.TextColor3 = Color3.new(0.2, 0.2, 0.2)
+        button.BackgroundColor3 = Color3.new(0.8, 0.67, 0)
         button.TextXAlignment = Enum.TextXAlignment.Left
         button.TextScaled = true
         button.Parent = navFrame
@@ -181,12 +131,15 @@ local function createMenu()
     local serverButton = createTabButton("  Server", 240)
     local discordButton = createTabButton("  Discord!", 280)
 
+    -- Creamos el área de contenido
     local contentFrame = Instance.new("Frame")
     contentFrame.Size = UDim2.new(1, -150, 1, -40)
     contentFrame.Position = UDim2.new(0, 150, 0, 40)
-    contentFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    contentFrame.BackgroundColor3 = Color3.new(1, 0.843, 0) -- Amarillo
+    contentFrame.BackgroundTransparency = 0.3 -- Transparencia
     contentFrame.Parent = mainFrame
 
+    -- Función para cambiar de pestaña
     local currentTab
     local function changeTab(tabFrame)
         if currentTab then
@@ -196,35 +149,41 @@ local function createMenu()
         currentTab.Visible = true
     end
 
+    -- Creamos las pestañas (frames de contenido)
     local mainTab = Instance.new("Frame")
     mainTab.Size = UDim2.new(1, 0, 1, 0)
-    mainTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    mainTab.BackgroundColor3 = Color3.new(1, 0.843, 0)
+    mainTab.BackgroundTransparency = 0.3
     mainTab.Parent = contentFrame
     mainTab.Visible = false
 
     local playerTab = Instance.new("Frame")
     playerTab.Size = UDim2.new(1, 0, 1, 0)
-    playerTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    playerTab.BackgroundColor3 = Color3.new(1, 0.843, 0)
+    playerTab.BackgroundTransparency = 0.3
     playerTab.Parent = contentFrame
     playerTab.Visible = false
 
     local stealerTab = Instance.new("Frame")
     stealerTab.Size = UDim2.new(1, 0, 1, 0)
-    stealerTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    stealerTab.BackgroundColor3 = Color3.new(1, 0.843, 0)
+    stealerTab.BackgroundTransparency = 0.3
     stealerTab.Parent = contentFrame
     stealerTab.Visible = false
 
+    -- Conectamos los botones a las pestañas
     mainButton.MouseButton1Click:Connect(function() changeTab(mainTab) end)
     playerButton.MouseButton1Click:Connect(function() changeTab(playerTab) end)
     stealerButton.MouseButton1Click:Connect(function() changeTab(stealerTab) end)
 
     changeTab(mainTab)
 
+    -- Creamos los botones de las funciones en la pestaña "Player"
     local multipleJumpButton = Instance.new("TextButton")
     multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
     multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
     multipleJumpButton.Text = "Salto Múltiple: OFF"
-    multipleJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    multipleJumpButton.BackgroundColor3 = Color3.new(0.6, 0.5, 0)
     multipleJumpButton.Parent = playerTab
     multipleJumpButton.MouseButton1Click:Connect(function()
         local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
@@ -236,52 +195,43 @@ local function createMenu()
     wallhackButton.Size = UDim2.new(0, 180, 0, 40)
     wallhackButton.Position = UDim2.new(0, 20, 0, 80)
     wallhackButton.Text = "Wallhack (ESP): OFF"
-    wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    wallhackButton.BackgroundColor3 = Color3.new(0.6, 0.5, 0)
     wallhackButton.Parent = playerTab
     wallhackButton.MouseButton1Click:Connect(function()
         toggleWallhack(not wallhackEnabled)
         wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
     end)
-
-    local ghostModeButton = Instance.new("TextButton")
-    ghostModeButton.Size = UDim2.new(0, 180, 0, 40)
-    ghostModeButton.Position = UDim2.new(0, 20, 0, 140)
-    ghostModeButton.Text = "Invisibilidad Falsa: OFF"
-    ghostModeButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    ghostModeButton.Parent = playerTab
-    ghostModeButton.MouseButton1Click:Connect(function()
-        fakeInvisibilityEnabled = not fakeInvisibilityEnabled
-        toggleFakeInvisibility(fakeInvisibilityEnabled)
-        ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
-    end)
     
+    -- Botón para ocultar el menú
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
     hideButton.Position = UDim2.new(1, -25, 0, 5)
     hideButton.Text = "-"
     hideButton.Font = Enum.Font.SourceSansBold
     hideButton.TextSize = 20
-    hideButton.TextColor3 = Color3.new(1, 1, 1)
-    hideButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    hideButton.TextColor3 = Color3.new(0, 0, 0)
+    hideButton.BackgroundColor3 = Color3.new(0.7, 0.6, 0)
     hideButton.Parent = mainFrame
 
+    -- Botón para mostrar el menú (el "logo" discreto)
     local showButton = Instance.new("TextButton")
     showButton.Size = UDim2.new(0, 50, 0, 50)
     showButton.Position = UDim2.new(0.5, -25, 0.5, -25)
     showButton.Text = "CH"
     showButton.Font = Enum.Font.SourceSansBold
     showButton.TextSize = 20
-    showButton.TextColor3 = Color3.new(1, 1, 1)
-    showButton.BackgroundColor3 = Color3.new(0.5, 0.2, 0.2)
+    showButton.TextColor3 = Color3.new(0, 0, 0)
+    showButton.BackgroundColor3 = Color3.new(0.7, 0.6, 0)
     showButton.Visible = false
     showButton.Parent = screenGui
 
+    -- Conexión de los botones para ocultar/mostrar
     hideButton.MouseButton1Click:Connect(function()
         mainFrame.Visible = false
         showButton.Visible = true
     end)
 
-    showButton.MouseButton1Click:Connect(function()
+    showButton.MouseButton1Click:Connect(function(character)
         mainFrame.Visible = true
         showButton.Visible = false
     end)
@@ -301,6 +251,7 @@ end
 
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
 
+-- Ejecutamos la función si el personaje ya existe
 if LocalPlayer.Character then
     onCharacterAdded(LocalPlayer.Character)
 end
