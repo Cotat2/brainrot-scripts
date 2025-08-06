@@ -15,7 +15,7 @@ local jumpBoostEnabled = false
 
 -- Valor del salto potenciado
 local originalJumpPower = Humanoid.JumpPower
-local jumpBoostValue = 50 -- Valor por defecto
+local jumpBoostValue = 200 -- Valor por defecto
 
 -- Función para manejar el Salto Múltiple
 local function handleJump()
