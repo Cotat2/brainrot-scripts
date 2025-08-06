@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 2.5 - Noclip Mejorado)
+-- Script con menú estilo Hub para Delta (Versión Final 2.7 - Noclip Corregido)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -137,7 +137,9 @@ local function toggleAdvancedNoclip(state)
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     local humanoid = character:WaitForChild("Humanoid")
-    
+    local camera = workspace.CurrentCamera
+    local speed = 1.5 
+
     if state then
         -- Desactiva la colisión localmente
         for _, part in pairs(character:GetChildren()) do
@@ -145,14 +147,26 @@ local function toggleAdvancedNoclip(state)
                 part.CanCollide = false
             end
         end
-        humanoid.WalkSpeed = 30 -- Se ajusta la velocidad para un movimiento más fluido en Noclip
+        humanoid.WalkSpeed = 0 
 
         noclipLoop = RunService.Heartbeat:Connect(function()
             if advancedNoclipEnabled then
-                local moveDirection = humanoid.MoveDirection
-                if moveDirection.Magnitude > 0 then
-                    local newPosition = humanoidRootPart.CFrame.p + moveDirection * 1
-                    humanoidRootPart.CFrame = CFrame.new(newPosition)
+                local moveVector = Vector3.new(0, 0, 0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    moveVector = moveVector + camera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    moveVector = moveVector - camera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    moveVector = moveVector + camera.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    moveVector = moveVector - camera.CFrame.RightVector
+                end
+
+                if moveVector.Magnitude > 0 then
+                    humanoidRootPart.CFrame = humanoidRootPart.CFrame + moveVector.Unit * speed
                 end
             end
         end)
