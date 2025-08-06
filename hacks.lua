@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 2.2 - Daño de Caída en Stealer)
+-- Script con menú estilo Hub para Delta (Versión Corregida 2.3 - No Daño de Caída)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -14,6 +14,7 @@ local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
 local noclipEnabled = false
 local noFallDamageEnabled = false
+local noFallDamageConnection = nil
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
@@ -150,26 +151,27 @@ local function toggleNoclip(state)
     end
 end
 
--- FUNCIÓN PARA EL DAÑO DE CAÍDA
+-- FUNCIÓN CORREGIDA PARA EL DAÑO DE CAÍDA
 local function toggleNoFallDamage(state)
     noFallDamageEnabled = state
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local humanoid = character:WaitForChild("Humanoid")
     
-    if state then
-        humanoid.BreakJointsOnDeath = false
-    else
-        humanoid.BreakJointsOnDeath = true
+    if noFallDamageConnection then
+        noFallDamageConnection:Disconnect()
+        noFallDamageConnection = nil
     end
 
-    local function onLanded()
-        if noFallDamageEnabled then
-            humanoid:TakeDamage(0)
+    if state then
+        local function onCharacterAdded(character)
+            local humanoid = character:WaitForChild("Humanoid")
+            noFallDamageConnection = humanoid.Landed:Connect(function()
+                humanoid:TakeDamage(0)
+            end)
         end
-    end
-    
-    if noFallDamageEnabled then
-        humanoid.Landed:Connect(onLanded)
+        
+        LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+        if LocalPlayer.Character then
+            onCharacterAdded(LocalPlayer.Character)
+        end
     end
 end
 
@@ -327,7 +329,6 @@ local function createMenu()
         noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
     end)
 
-    -- NUEVO BOTÓN: No Fall Damage
     local noFallDamageButton = Instance.new("TextButton")
     noFallDamageButton.Size = UDim2.new(0, 180, 0, 40)
     noFallDamageButton.Position = UDim2.new(0, 20, 0, 80)
