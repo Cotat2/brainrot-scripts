@@ -1,8 +1,8 @@
--- Script con menú estilo Hub para Delta (Versión Final y Verificada)
+-- Script con menú estilo Hub para Delta (Versión 3.0)
 
 -- Variables principales
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local UserInputService = game:GetService("UserInputService")
 local lastMenuInstance = nil
 
@@ -81,22 +81,20 @@ local function createMenu()
     screenGui.Name = "HubMenu"
     screenGui.Parent = playerGui
     
-    -- Creamos el Frame principal del menú con color y transparencia
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 500, 0, 400)
     mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
-    mainFrame.BackgroundColor3 = Color3.new(1, 0.9, 0) -- Amarillo brillante
-    mainFrame.BackgroundTransparency = 0.5 -- 50% de transparencia
+    mainFrame.BackgroundColor3 = Color3.new(1, 0.9, 0)
+    mainFrame.BackgroundTransparency = 0.5
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
     mainFrame.Parent = screenGui
 
-    -- Creamos la barra de navegación lateral
     local navFrame = Instance.new("Frame")
     navFrame.Size = UDim2.new(0, 150, 1, 0)
-    navFrame.BackgroundColor3 = Color3.new(0.8, 0.7, 0) -- Amarillo más oscuro
-    navFrame.BackgroundTransparency = 0.5 -- 50% de transparencia
+    navFrame.BackgroundColor3 = Color3.new(0.8, 0.7, 0)
+    navFrame.BackgroundTransparency = 0.5
     navFrame.Parent = mainFrame
 
     local titleLabel = Instance.new("TextLabel")
@@ -104,11 +102,10 @@ local function createMenu()
     titleLabel.Text = "Chilli Hub"
     titleLabel.Font = Enum.Font.SourceSansBold
     titleLabel.TextSize = 20
-    titleLabel.TextColor3 = Color3.new(0, 0, 0) -- Texto negro
-    titleLabel.BackgroundColor3 = Color3.new(0.6, 0.5, 0) -- Amarillo aún más oscuro
+    titleLabel.TextColor3 = Color3.new(0, 0, 0)
+    titleLabel.BackgroundColor3 = Color3.new(0.6, 0.5, 0)
     titleLabel.Parent = navFrame
 
-    -- Creamos los botones de las pestañas
     local function createTabButton(text, yOffset)
         local button = Instance.new("TextButton")
         button.Size = UDim2.new(1, 0, 0, 40)
@@ -118,7 +115,7 @@ local function createMenu()
         button.TextSize = 16
         button.TextColor3 = Color3.new(0.2, 0.2, 0.2)
         button.BackgroundColor3 = Color3.new(0.8, 0.7, 0)
-        button.BackgroundTransparency = 0.5 -- 50% de transparencia
+        button.BackgroundTransparency = 0.5
         button.TextXAlignment = Enum.TextXAlignment.Left
         button.TextScaled = true
         button.Parent = navFrame
@@ -133,15 +130,13 @@ local function createMenu()
     local serverButton = createTabButton("  Server", 240)
     local discordButton = createTabButton("  Discord!", 280)
 
-    -- Creamos el área de contenido
     local contentFrame = Instance.new("Frame")
     contentFrame.Size = UDim2.new(1, -150, 1, -40)
     contentFrame.Position = UDim2.new(0, 150, 0, 40)
-    contentFrame.BackgroundColor3 = Color3.new(1, 0.9, 0) -- Amarillo brillante
-    contentFrame.BackgroundTransparency = 0.5 -- 50% de transparencia
+    contentFrame.BackgroundColor3 = Color3.new(1, 0.9, 0)
+    contentFrame.BackgroundTransparency = 0.5
     contentFrame.Parent = mainFrame
 
-    -- Función para cambiar de pestaña
     local currentTab
     local function changeTab(tabFrame)
         if currentTab then
@@ -151,7 +146,6 @@ local function createMenu()
         currentTab.Visible = true
     end
 
-    -- Creamos las pestañas (frames de contenido)
     local mainTab = Instance.new("Frame")
     mainTab.Size = UDim2.new(1, 0, 1, 0)
     mainTab.BackgroundColor3 = Color3.new(1, 0.9, 0)
@@ -173,7 +167,67 @@ local function createMenu()
     stealerTab.Parent = contentFrame
     stealerTab.Visible = false
 
-    -- Conectamos los botones a las pestañas
     mainButton.MouseButton1Click:Connect(function() changeTab(mainTab) end)
     playerButton.MouseButton1Click:Connect(function() changeTab(playerTab) end)
-    stealerButton.MouseButton1Click:Connect(function() change
+    stealerButton.MouseButton1Click:Connect(function() changeTab(stealerTab) end)
+
+    changeTab(mainTab)
+
+    local multipleJumpButton = Instance.new("TextButton")
+    multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
+    multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
+    multipleJumpButton.Text = "Salto Múltiple: OFF"
+    multipleJumpButton.BackgroundColor3 = Color3.new(0.6, 0.5, 0)
+    multipleJumpButton.Parent = playerTab
+    multipleJumpButton.MouseButton1Click:Connect(function()
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+        toggleMultipleJump(not multipleJumpEnabled, humanoid)
+        multipleJumpButton.Text = "Salto Múltiple: " .. (multipleJumpEnabled and "ON" or "OFF")
+    end)
+
+    local wallhackButton = Instance.new("TextButton")
+    wallhackButton.Size = UDim2.new(0, 180, 0, 40)
+    wallhackButton.Position = UDim2.new(0, 20, 0, 80)
+    wallhackButton.Text = "Wallhack (ESP): OFF"
+    wallhackButton.BackgroundColor3 = Color3.new(0.6, 0.5, 0)
+    wallhackButton.Parent = playerTab
+    wallhackButton.MouseButton1Click:Connect(function()
+        toggleWallhack(not wallhackEnabled)
+        wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
+    end)
+    
+    local hideButton = Instance.new("TextButton")
+    hideButton.Size = UDim2.new(0, 20, 0, 20)
+    hideButton.Position = UDim2.new(1, -25, 0, 5)
+    hideButton.Text = "-"
+    hideButton.Font = Enum.Font.SourceSansBold
+    hideButton.TextSize = 20
+    hideButton.TextColor3 = Color3.new(0, 0, 0)
+    hideButton.BackgroundColor3 = Color3.new(0.7, 0.6, 0)
+    hideButton.Parent = mainFrame
+
+    local showButton = Instance.new("TextButton")
+    showButton.Size = UDim2.new(0, 50, 0, 50)
+    showButton.Position = UDim2.new(0.5, -25, 0.5, -25)
+    showButton.Text = "CH"
+    showButton.Font = Enum.Font.SourceSansBold
+    showButton.TextSize = 20
+    showButton.TextColor3 = Color3.new(0, 0, 0)
+    showButton.BackgroundColor3 = Color3.new(0.7, 0.6, 0)
+    showButton.Visible = false
+    showButton.Parent = screenGui
+
+    hideButton.MouseButton1Click:Connect(function()
+        mainFrame.Visible = false
+        showButton.Visible = true
+    end)
+
+    showButton.MouseButton1Click:Connect(function(character)
+        mainFrame.Visible = true
+        showButton.Visible = false
+    end)
+
+    return screenGui
+end
+
+local function on
