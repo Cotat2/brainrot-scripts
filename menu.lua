@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida y Experimental)
+-- Script con menú estilo Hub para Delta (Versión Corregida 1.2)
 -- ADVERTENCIA: La función "Invisibilidad Falsa" es una ilusión para tu pantalla. Otros jugadores te verán moverse, y es muy probable que te detecten.
 
 -- Variables principales
@@ -79,8 +79,7 @@ end
 -- Función para la Invisibilidad Falsa
 local function toggleFakeInvisibility(state)
     fakeInvisibilityEnabled = state
-    local character = LocalPlayer.Character
-    if not character then return end
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     
     if state then
         -- Creamos un clon visual del avatar
@@ -127,8 +126,6 @@ local function createMenu()
     screenGui.Name = "HubMenu"
     screenGui.Parent = playerGui
     
-    -- ... (Código del menú, sin cambios) ...
-
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 500, 0, 400)
     mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
