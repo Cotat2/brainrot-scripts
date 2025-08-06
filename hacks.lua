@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 2.0 - Limpio y Funcional)
+-- Script con menú estilo Hub para Delta (Versión Corregida 2.2 - Daño de Caída en Stealer)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -13,6 +13,7 @@ local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
 local noclipEnabled = false
+local noFallDamageEnabled = false
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
@@ -146,6 +147,29 @@ local function toggleNoclip(state)
                 part.CanCollide = true
             end
         end
+    end
+end
+
+-- FUNCIÓN PARA EL DAÑO DE CAÍDA
+local function toggleNoFallDamage(state)
+    noFallDamageEnabled = state
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    if state then
+        humanoid.BreakJointsOnDeath = false
+    else
+        humanoid.BreakJointsOnDeath = true
+    end
+
+    local function onLanded()
+        if noFallDamageEnabled then
+            humanoid:TakeDamage(0)
+        end
+    end
+    
+    if noFallDamageEnabled then
+        humanoid.Landed:Connect(onLanded)
     end
 end
 
@@ -290,7 +314,7 @@ local function createMenu()
         toggleSpeedHack(not speedHackEnabled)
         speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
     end)
-
+    
     -- Stealer Tab
     local noclipButton = Instance.new("TextButton")
     noclipButton.Size = UDim2.new(0, 180, 0, 40)
@@ -301,6 +325,18 @@ local function createMenu()
     noclipButton.MouseButton1Click:Connect(function()
         toggleNoclip(not noclipEnabled)
         noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
+    end)
+
+    -- NUEVO BOTÓN: No Fall Damage
+    local noFallDamageButton = Instance.new("TextButton")
+    noFallDamageButton.Size = UDim2.new(0, 180, 0, 40)
+    noFallDamageButton.Position = UDim2.new(0, 20, 0, 80)
+    noFallDamageButton.Text = "No Daño de Caída: OFF"
+    noFallDamageButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    noFallDamageButton.Parent = stealerTab
+    noFallDamageButton.MouseButton1Click:Connect(function()
+        toggleNoFallDamage(not noFallDamageEnabled)
+        noFallDamageButton.Text = "No Daño de Caída: " .. (noFallDamageEnabled and "ON" or "OFF")
     end)
 
     local hideButton = Instance.new("TextButton")
