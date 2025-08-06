@@ -1,21 +1,20 @@
--- Script con menú estilo Hub para Delta (Versión Experimental)
--- ADVERTENCIA: La función "Modo Fantasma" es altamente inestable y es casi seguro que serás detectado y expulsado del juego. Úsala bajo tu propia responsabilidad.
+-- Script con menú estilo Hub para Delta (Versión Corregida y Experimental)
+-- ADVERTENCIA: La función "Invisibilidad Falsa" es una ilusión para tu pantalla. Otros jugadores te verán moverse, y es muy probable que te detecten.
 
 -- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local lastMenuInstance = nil
 
 -- Estado de las funciones
 local multipleJumpEnabled = false
 local wallhackEnabled = false
-local ghostModeEnabled = false
-local lastMenuInstance = nil
+local fakeInvisibilityEnabled = false
 
--- Variables para el Modo Fantasma
-local ghostCFrame
-local ghostModeConnection
+-- Variables para la Invisibilidad Falsa
+local ghostClone = nil
 
 -- Función para manejar el Salto Múltiple
 local function handleJump(humanoid)
@@ -77,36 +76,45 @@ local function toggleWallhack(state)
     end
 end
 
--- Función para el Modo Fantasma
-local function toggleGhostMode(state)
-    ghostModeEnabled = state
+-- Función para la Invisibilidad Falsa
+local function toggleFakeInvisibility(state)
+    fakeInvisibilityEnabled = state
     local character = LocalPlayer.Character
     if not character then return end
     
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return end
-
     if state then
-        ghostCFrame = humanoidRootPart.CFrame
-        -- Mantenemos todas las partes del avatar en la posición inicial en cada frame
-        ghostModeConnection = RunService.Heartbeat:Connect(function()
-            if ghostModeEnabled and character then
-                for _, part in pairs(character:GetChildren()) do
-                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                        part.CFrame = ghostCFrame
-                    end
-                end
+        -- Creamos un clon visual del avatar
+        ghostClone = character:Clone()
+        ghostClone.Name = "GhostClone"
+        ghostClone.Parent = workspace
+        
+        -- Hacemos el clon inamovible
+        for _, part in pairs(ghostClone:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Anchored = true
+                part.CanCollide = false
             end
-        end)
+        end
+        
+        -- Hacemos que el avatar real sea invisible localmente
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.LocalTransparencyModifier = 1
+            end
+        end
     else
-        -- Desactivamos la conexión y permitimos que el avatar se mueva libremente
-        if ghostModeConnection then
-            ghostModeConnection:Disconnect()
-            ghostModeConnection = nil
+        -- Eliminamos el clon y restauramos la visibilidad del avatar real
+        if ghostClone then
+            ghostClone:Destroy()
+            ghostClone = nil
+        end
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.LocalTransparencyModifier = 0
+            end
         end
     end
 end
-
 
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
@@ -229,16 +237,15 @@ local function createMenu()
         wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
     end)
 
-    -- Botón de la nueva función "Modo Fantasma"
     local ghostModeButton = Instance.new("TextButton")
     ghostModeButton.Size = UDim2.new(0, 180, 0, 40)
     ghostModeButton.Position = UDim2.new(0, 20, 0, 140)
-    ghostModeButton.Text = "Modo Fantasma: OFF"
+    ghostModeButton.Text = "Invisibilidad Falsa: OFF"
     ghostModeButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     ghostModeButton.Parent = playerTab
     ghostModeButton.MouseButton1Click:Connect(function()
-        toggleGhostMode(not ghostModeEnabled)
-        ghostModeButton.Text = "Modo Fantasma: " .. (ghostModeEnabled and "ON" or "OFF")
+        toggleFakeInvisibility(not fakeInvisibilityEnabled)
+        ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
     end)
     
     local hideButton = Instance.new("TextButton")
