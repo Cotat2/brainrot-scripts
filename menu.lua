@@ -1,7 +1,6 @@
--- Script con menú para Delta
--- Incluye Salto Múltiple, Wallhack y Atraviesa Muros
+-- Script mejorado para Atravesar Muros
+-- Este script manipula el CFrame de tu personaje para moverlo.
 
--- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -9,31 +8,25 @@ local Humanoid = Character:WaitForChild("Humanoid")
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 -- Estado de las funciones
-local multipleJumpEnabled = false
+local infiniteJumpEnabled = false
 local wallhackEnabled = false
-local noClipEnabled = false
+local noclipEnabled = false
 
--- Función para manejar el salto múltiple
+-- Función para manejar el Salto Múltiple
 local function handleJump()
-    -- Verificamos si la función de salto múltiple está activa
-    if multipleJumpEnabled then
-        -- Si el humanoide no está muerto
+    if infiniteJumpEnabled then
         if Humanoid.Health > 0 then
-            -- Forzamos un salto
             Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end
 end
 
 -- Función para activar o desactivar el Salto Múltiple
-local function toggleMultipleJump(state)
-    multipleJumpEnabled = state
+local function toggleInfiniteJump(state)
+    infiniteJumpEnabled = state
     if state then
-        -- Conectamos la función de salto a la entrada del usuario
-        -- El script detectará cuando el jugador presione la barra espaciadora
         game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessedEvent)
             if input.KeyCode == Enum.KeyCode.Space then
-                -- Llamamos a la función para hacer el salto
                 handleJump()
             end
         end)
@@ -79,12 +72,49 @@ local function toggleWallhack(state)
     end
 end
 
--- Función para activar o desactivar el Atraviesa-Muros (NoClip)
-local function toggleNoClip(state)
-    noClipEnabled = state
-    for _, child in ipairs(Character:GetChildren()) do
-        if child:IsA("BasePart") then
-            child.CanCollide = not state
+-- **Función para el nuevo script de Atravesar Muros**
+local function toggleNoclip(state)
+    noclipEnabled = state
+    if state then
+        -- Desactiva la colisión solo de forma local
+        for _, child in ipairs(Character:GetChildren()) do
+            if child:IsA("BasePart") then
+                child.CanCollide = false
+            end
+        end
+
+        -- Conecta la función a cada frame del juego
+        game:GetService("RunService").Heartbeat:Connect(function()
+            if noclipEnabled then
+                -- Mueve el personaje según la cámara, pero solo si no choca
+                local newCFrame = HumanoidRootPart.CFrame
+                local lookVector = game.Workspace.CurrentCamera.CFrame.lookVector
+                local moveVector = Vector3.new()
+
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
+                    moveVector = moveVector + lookVector
+                end
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
+                    moveVector = moveVector - lookVector
+                end
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
+                    moveVector = moveVector - lookVector:Cross(Vector3.new(0, 1, 0))
+                end
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
+                    moveVector = moveVector + lookVector:Cross(Vector3.new(0, 1, 0))
+                end
+
+                if moveVector ~= Vector3.new() then
+                    HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + moveVector.Unit * Humanoid.WalkSpeed * 0.05
+                end
+            end
+        end)
+    else
+        -- Vuelve a activar la colisión
+        for _, child in ipairs(Character:GetChildren()) do
+            if child:IsA("BasePart") then
+                child.CanCollide = true
+            end
         end
     end
 end
@@ -103,16 +133,25 @@ frame.Active = true
 frame.Draggable = true
 frame.Parent = screenGui
 
-local multipleJumpButton = Instance.new("TextButton")
-multipleJumpButton.Size = UDim2.new(1, -20, 0, 40)
-multipleJumpButton.Position = UDim2.new(0, 10, 0, 40)
-multipleJumpButton.Text = "Salto Múltiple: OFF"
-multipleJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-multipleJumpButton.Parent = frame
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "Mod Menu"
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+title.Parent = frame
 
-multipleJumpButton.MouseButton1Click:Connect(function()
-    toggleMultipleJump(not multipleJumpEnabled)
-    multipleJumpButton.Text = "Salto Múltiple: " .. (multipleJumpEnabled and "ON" or "OFF")
+local infiniteJumpButton = Instance.new("TextButton")
+infiniteJumpButton.Size = UDim2.new(1, -20, 0, 40)
+infiniteJumpButton.Position = UDim2.new(0, 10, 0, 40)
+infiniteJumpButton.Text = "Salto Múltiple: OFF"
+infiniteJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+infiniteJumpButton.Parent = frame
+
+infiniteJumpButton.MouseButton1Click:Connect(function()
+    toggleInfiniteJump(not infiniteJumpEnabled)
+    infiniteJumpButton.Text = "Salto Múltiple: " .. (infiniteJumpEnabled and "ON" or "OFF")
 end)
 
 local wallhackButton = Instance.new("TextButton")
@@ -135,6 +174,6 @@ noClipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
 noClipButton.Parent = frame
 
 noClipButton.MouseButton1Click:Connect(function()
-    toggleNoClip(not noClipEnabled)
-    noClipButton.Text = "Atraviesa Muros: " .. (noClipEnabled and "ON" or "OFF")
+    toggleNoclip(not noclipEnabled)
+    noClipButton.Text = "Atraviesa Muros: " .. (noclipEnabled and "ON" or "OFF")
 end)
