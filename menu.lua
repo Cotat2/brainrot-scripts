@@ -1,21 +1,18 @@
--- Script con menú para Delta (Versión corregida)
--- Incluye Salto Múltiple, Salto Potenciado (ajustable con botón) y Wallhack (ESP)
+-- Script con menú estilo Hub para Delta
 
 -- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local UserInputService = game:GetService("UserInputService")
 
 -- Estado de las funciones
 local multipleJumpEnabled = false
 local wallhackEnabled = false
-local jumpBoostEnabled = false
 
--- Valor del salto potenciado
-local originalJumpPower = Humanoid.JumpPower
-local jumpBoostValue = 50 -- Valor por defecto
+-- Estado del menú
+local menuHidden = false
 
 -- Función para manejar el Salto Múltiple
 local function handleJump()
@@ -30,37 +27,11 @@ end
 local function toggleMultipleJump(state)
     multipleJumpEnabled = state
     if state then
-        game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessedEvent)
+        UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
             if input.KeyCode == Enum.KeyCode.Space then
                 handleJump()
             end
         end)
-    end
-end
-
--- Función para actualizar el valor del Salto Potenciado
-local function updateJumpBoost()
-    if jumpBoostEnabled then
-        Humanoid.JumpPower = originalJumpPower + jumpBoostValue
-    else
-        Humanoid.JumpPower = originalJumpPower
-    end
-end
-
--- Función para activar o desactivar el Salto Potenciado
-local function toggleJumpBoost(state)
-    jumpBoostEnabled = state
-    updateJumpBoost()
-end
-
--- Función para aplicar el valor del TextBox
-local function applyJumpBoostValue(text)
-    local num = tonumber(text)
-    if num then
-        jumpBoostValue = num
-        if jumpBoostEnabled then
-            updateJumpBoost()
-        end
     end
 end
 
@@ -69,8 +40,8 @@ local function toggleWallhack(state)
     wallhackEnabled = state
     if state then
         for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character.Humanoid then
-                local head = player.Character:WaitForChild("Head")
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                local head = player.Character:FindFirstChild("Head")
                 if head and head:FindFirstChild("PlayerESP") == nil then
                     local billboardGui = Instance.new("BillboardGui")
                     billboardGui.Name = "PlayerESP"
@@ -103,95 +74,158 @@ local function toggleWallhack(state)
     end
 end
 
--- Creamos el menú
+-- Creamos el ScreenGui principal
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ModMenu"
+screenGui.Name = "HubMenu"
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 250)
-frame.Position = UDim2.new(0.5, -100, 0.5, -125)
-frame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-frame.Parent = screenGui
+-- Creamos el Frame principal del menú
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 500, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "Mod Menu"
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 20
-title.TextColor3 = Color3.new(1, 1, 1)
-title.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-title.Parent = frame
+-- Creamos la barra de navegación lateral
+local navFrame = Instance.new("Frame")
+navFrame.Size = UDim2.new(0, 150, 1, 0)
+navFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+navFrame.Parent = mainFrame
 
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 40)
+titleLabel.Text = "Chilli Hub"
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 20
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
+titleLabel.Parent = navFrame
+
+-- Creamos los botones de las pestañas
+local function createTabButton(text, yOffset)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 0, 40)
+    button.Position = UDim2.new(0, 0, 0, yOffset)
+    button.Text = text
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 16
+    button.TextColor3 = Color3.new(0.6, 0.6, 0.6)
+    button.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    button.TextXAlignment = Enum.TextXAlignment.Left
+    button.TextScaled = true
+    button.Parent = navFrame
+    return button
+end
+
+local mainButton = createTabButton("  Main", 40)
+local stealerButton = createTabButton("  Stealer", 80)
+local helperButton = createTabButton("  Helper", 120)
+local playerButton = createTabButton("  Player", 160)
+local finderButton = createTabButton("  Finder", 200)
+local serverButton = createTabButton("  Server", 240)
+local discordButton = createTabButton("  Discord!", 280)
+
+-- Creamos el área de contenido
+local contentFrame = Instance.new("Frame")
+contentFrame.Size = UDim2.new(1, -150, 1, -40)
+contentFrame.Position = UDim2.new(0, 150, 0, 40)
+contentFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+contentFrame.Parent = mainFrame
+
+-- Función para cambiar de pestaña
+local currentTab
+local function changeTab(tabFrame)
+    if currentTab then
+        currentTab.Visible = false
+    end
+    currentTab = tabFrame
+    currentTab.Visible = true
+end
+
+-- Creamos las pestañas (frames de contenido)
+local mainTab = Instance.new("Frame")
+mainTab.Size = UDim2.new(1, 0, 1, 0)
+mainTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+mainTab.Parent = contentFrame
+mainTab.Visible = false
+
+local playerTab = Instance.new("Frame")
+playerTab.Size = UDim2.new(1, 0, 1, 0)
+playerTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+playerTab.Parent = contentFrame
+playerTab.Visible = false
+
+-- Aquí puedes crear más pestañas
+local stealerTab = Instance.new("Frame")
+stealerTab.Size = UDim2.new(1, 0, 1, 0)
+stealerTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+stealerTab.Parent = contentFrame
+stealerTab.Visible = false
+
+-- Conectamos los botones a las pestañas
+mainButton.MouseButton1Click:Connect(function() changeTab(mainTab) end)
+playerButton.MouseButton1Click:Connect(function() changeTab(playerTab) end)
+stealerButton.MouseButton1Click:Connect(function() changeTab(stealerTab) end)
+
+-- Inicialmente mostramos la pestaña principal
+changeTab(mainTab)
+
+-- Creamos los botones de las funciones en la pestaña "Player"
 local multipleJumpButton = Instance.new("TextButton")
-multipleJumpButton.Size = UDim2.new(1, -20, 0, 40)
-multipleJumpButton.Position = UDim2.new(0, 10, 0, 40)
+multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
+multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
 multipleJumpButton.Text = "Salto Múltiple: OFF"
 multipleJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-multipleJumpButton.Parent = frame
-
+multipleJumpButton.Parent = playerTab
 multipleJumpButton.MouseButton1Click:Connect(function()
     toggleMultipleJump(not multipleJumpEnabled)
     multipleJumpButton.Text = "Salto Múltiple: " .. (multipleJumpEnabled and "ON" or "OFF")
 end)
 
-local jumpBoostLabel = Instance.new("TextLabel")
-jumpBoostLabel.Size = UDim2.new(0, 100, 0, 20)
-jumpBoostLabel.Position = UDim2.new(0, 10, 0, 90)
-jumpBoostLabel.Text = "Salto Potenciado:"
-jumpBoostLabel.Font = Enum.Font.SourceSans
-jumpBoostLabel.TextSize = 14
-jumpBoostLabel.TextColor3 = Color3.new(1, 1, 1)
-jumpBoostLabel.BackgroundTransparency = 1
-jumpBoostLabel.Parent = frame
-
-local jumpBoostTextBox = Instance.new("TextBox")
-jumpBoostTextBox.Size = UDim2.new(0, 60, 0, 20)
-jumpBoostTextBox.Position = UDim2.new(0, 120, 0, 90)
-jumpBoostTextBox.PlaceholderText = tostring(jumpBoostValue)
-jumpBoostTextBox.Text = tostring(jumpBoostValue)
-jumpBoostTextBox.Font = Enum.Font.SourceSans
-jumpBoostTextBox.TextSize = 14
-jumpBoostTextBox.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-jumpBoostTextBox.Parent = frame
-
-local applyButton = Instance.new("TextButton")
-applyButton.Size = UDim2.new(0, 60, 0, 20)
-applyButton.Position = UDim2.new(0, 120, 0, 120)
-applyButton.Text = "Aplicar"
-applyButton.Font = Enum.Font.SourceSansBold
-applyButton.TextSize = 14
-applyButton.TextColor3 = Color3.new(1, 1, 1)
-applyButton.BackgroundColor3 = Color3.new(0, 0.5, 0) -- Color verde
-applyButton.Parent = frame
-
-applyButton.MouseButton1Click:Connect(function()
-    applyJumpBoostValue(jumpBoostTextBox.Text)
-end)
-
 local wallhackButton = Instance.new("TextButton")
-wallhackButton.Size = UDim2.new(1, -20, 0, 40)
-wallhackButton.Position = UDim2.new(0, 10, 0, 160)
+wallhackButton.Size = UDim2.new(0, 180, 0, 40)
+wallhackButton.Position = UDim2.new(0, 20, 0, 80)
 wallhackButton.Text = "Wallhack (ESP): OFF"
 wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-wallhackButton.Parent = frame
-
+wallhackButton.Parent = playerTab
 wallhackButton.MouseButton1Click:Connect(function()
     toggleWallhack(not wallhackEnabled)
     wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
 end)
 
-local jumpBoostToggleButton = Instance.new("TextButton")
-jumpBoostToggleButton.Size = UDim2.new(1, -20, 0, 40)
-jumpBoostToggleButton.Position = UDim2.new(0, 10, 0, 210)
-jumpBoostToggleButton.Text = "Activar Salto Potenciado: OFF"
-jumpBoostToggleButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-jumpBoostToggleButton.Parent = frame
+-- Botón para ocultar el menú
+local hideButton = Instance.new("TextButton")
+hideButton.Size = UDim2.new(0, 20, 0, 20)
+hideButton.Position = UDim2.new(1, -25, 0, 5)
+hideButton.Text = "-"
+hideButton.Font = Enum.Font.SourceSansBold
+hideButton.TextSize = 20
+hideButton.TextColor3 = Color3.new(1, 1, 1)
+hideButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+hideButton.Parent = mainFrame
 
-jumpBoostToggleButton.MouseButton1Click:Connect(function()
-    toggleJumpBoost(not jumpBoostEnabled)
-    jumpBoostToggleButton.Text = "Activar Salto Potenciado: " .. (jumpBoostEnabled and "ON" or "OFF")
+-- Botón para mostrar el menú (el "logo" discreto)
+local showButton = Instance.new("TextButton")
+showButton.Size = UDim2.new(0, 50, 0, 50)
+showButton.Position = UDim2.new(0.5, -25, 0.5, -25)
+showButton.Text = "CH"
+showButton.Font = Enum.Font.SourceSansBold
+showButton.TextSize = 20
+showButton.TextColor3 = Color3.new(1, 1, 1)
+showButton.BackgroundColor3 = Color3.new(0.5, 0.2, 0.2)
+showButton.Visible = false
+showButton.Parent = screenGui
+
+-- Conexión de los botones para ocultar/mostrar
+hideButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    showButton.Visible = true
+end)
+
+showButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    showButton.Visible = false
 end)
