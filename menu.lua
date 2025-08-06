@@ -1,5 +1,5 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 1.3 - Final)
--- ADVERTENCIA: La función "Invisibilidad Falsa" es una ilusión para tu pantalla. Otros jugadores te verán moverse, y es muy probable que te detecten.
+-- Script con menú estilo Hub para Delta (Versión 2.0)
+-- ADVERTENCIA: Esta función es una ilusión visual. Otros jugadores verán tu avatar real, y es probable que te detecten.
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -81,12 +81,26 @@ local function toggleFakeInvisibility(state)
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     
     if state then
-        -- Creamos un clon visual del avatar
+        -- Desactivar el avatar visible del jugador
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") or part:IsA("Decal") or part:IsA("MeshPart") then
+                part.LocalTransparencyModifier = 1
+            end
+        end
+
+        -- Crear y posicionar un clon del avatar en la posición actual
         ghostClone = character:Clone()
         ghostClone.Name = "GhostClone"
         ghostClone.Parent = workspace
         
-        -- Hacemos el clon inamovible
+        -- Congelar el clon para que se quede quieto
+        local ghostHumanoid = ghostClone:FindFirstChildOfClass("Humanoid")
+        if ghostHumanoid then
+            ghostHumanoid.Health = 0
+            ghostHumanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+        end
+        
+        -- Hacer las partes del clon inamovibles y sin colisiones
         for _, part in pairs(ghostClone:GetChildren()) do
             if part:IsA("BasePart") then
                 part.Anchored = true
@@ -94,20 +108,16 @@ local function toggleFakeInvisibility(state)
             end
         end
         
-        -- Hacemos que el avatar real sea invisible localmente
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") then
-                part.LocalTransparencyModifier = 1
-            end
-        end
     else
-        -- Eliminamos el clon y restauramos la visibilidad del avatar real
+        -- Eliminar el clon
         if ghostClone then
             ghostClone:Destroy()
             ghostClone = nil
         end
+        
+        -- Restaurar la visibilidad del avatar real
         for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") then
+            if part:IsA("BasePart") or part:IsA("Decal") or part:IsA("MeshPart") then
                 part.LocalTransparencyModifier = 0
             end
         end
@@ -291,4 +301,6 @@ end
 
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
 
-if LocalPlayer.Character
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
+end
