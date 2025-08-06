@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 1.6 - Cursor arreglado)
+-- Script con menú estilo Hub para Delta (Versión Corregida 1.7 - Clonación)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -13,7 +13,7 @@ local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
 local noclipEnabled = false
-local clickDeleteEnabled = false
+local cloneBombEnabled = false
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
@@ -21,19 +21,22 @@ local ghostClone = nil
 -- RemoteEvent para comunicarse con el servidor
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local remoteEvent = Instance.new("RemoteEvent")
-remoteEvent.Name = "DeleteObjectEvent"
+remoteEvent.Name = "CloneObjectEvent"
 remoteEvent.Parent = ReplicatedStorage
 
--- Script del servidor que elimina el objeto
+-- Script del servidor que clona el objeto
 local serverScript = Instance.new("Script")
 serverScript.Parent = ReplicatedStorage
 serverScript.Source = [[
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local remoteEvent = ReplicatedStorage:WaitForChild("DeleteObjectEvent")
+    local remoteEvent = ReplicatedStorage:WaitForChild("CloneObjectEvent")
     
-    remoteEvent.OnServerEvent:Connect(function(player, objectToDelete)
-        if objectToDelete and objectToDelete:IsA("BasePart") then
-            objectToDelete:Destroy()
+    remoteEvent.OnServerEvent:Connect(function(player, objectToClone)
+        if objectToClone and objectToClone:IsA("BasePart") then
+            local clonedObject = objectToClone:Clone()
+            clonedObject.Parent = workspace
+            clonedObject.CFrame = objectToClone.CFrame * CFrame.new(math.random(-5, 5), 5, math.random(-5, 5))
+            clonedObject.Anchored = false
         end
     end)
 ]]
@@ -170,9 +173,9 @@ local function toggleNoclip(state)
     end
 end
 
--- FUNCIÓN DE CLICK DELETE CON RemoteEvent
-local function toggleClickDelete(state)
-    clickDeleteEnabled = state
+-- FUNCIÓN DE CLONACIÓN CON RemoteEvent
+local function toggleCloneBomb(state)
+    cloneBombEnabled = state
     local mouse = LocalPlayer:GetMouse()
     if state then
         local function onClick()
@@ -312,7 +315,7 @@ local function createMenu()
     ghostModeButton.Parent = playerTab
     ghostModeButton.MouseButton1Click:Connect(function()
         toggleFakeInvisibility(not fakeInvisibilityEnabled)
-        ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilidad and "ON" or "OFF")
+        ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
     end)
     
     local speedHackButton = Instance.new("TextButton")
@@ -337,15 +340,16 @@ local function createMenu()
         noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
     end)
     
-    local clickDeleteButton = Instance.new("TextButton")
-    clickDeleteButton.Size = UDim2.new(0, 180, 0, 40)
-    clickDeleteButton.Position = UDim2.new(0, 20, 0, 320)
-    clickDeleteButton.Text = "Click Delete: OFF"
-    clickDeleteButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    clickDeleteButton.Parent = playerTab
-    clickDeleteButton.MouseButton1Click:Connect(function()
-        toggleClickDelete(not clickDeleteEnabled)
-        clickDeleteButton.Text = "Click Delete: " .. (clickDeleteEnabled and "ON" or "OFF")
+    -- NUEVO BOTÓN: Clonación
+    local cloneBombButton = Instance.new("TextButton")
+    cloneBombButton.Size = UDim2.new(0, 180, 0, 40)
+    cloneBombButton.Position = UDim2.new(0, 20, 0, 320)
+    cloneBombButton.Text = "Bomba de Clonación: OFF"
+    cloneBombButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    cloneBombButton.Parent = playerTab
+    cloneBombButton.MouseButton1Click:Connect(function()
+        toggleCloneBomb(not cloneBombEnabled)
+        cloneBombButton.Text = "Bomba de Clonación: " .. (cloneBombEnabled and "ON" or "OFF")
     end)
 
     local hideButton = Instance.new("TextButton")
@@ -379,7 +383,6 @@ local function createMenu()
         showButton.Visible = false
     end)
 
-    -- CÓDIGO AÑADIDO: Configura el cursor del ratón
     local mouse = LocalPlayer:GetMouse()
     mouse.Icon = ""
     
