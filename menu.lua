@@ -1,118 +1,137 @@
---- GUI Personalizada para "Roba un Brainrot"
--- Incluye: Boost Velocidad y Regulador de Altura de Salto
+-- Script con menú para Delta
 
--- Crear UI
-local ScreenGui = Instance.new("ScreenGui")
-local Frame = Instance.new("Frame")
-local SpeedButton = Instance.new("TextButton")
-local JumpSliderFrame = Instance.new("Frame")
-local SliderBar = Instance.new("Frame")
-local SliderKnob = Instance.new("TextButton")
-local JumpLabel = Instance.new("TextLabel")
-local CloseButton = Instance.new("TextButton")
-
--- Servicios
+-- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
--- Configuración UI
-ScreenGui.Parent = game.CoreGui
-ScreenGui.Name = "BrainrotScriptUI"
+-- Estado de las funciones
+local infiniteJumpEnabled = false
+local wallhackEnabled = false
+local noClipEnabled = false
 
-Frame.Size = UDim2.new(0, 220, 0, 200)
-Frame.Position = UDim2.new(0, 20, 0, 100)
-Frame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-Frame.Parent = ScreenGui
-
-SpeedButton.Size = UDim2.new(1, -20, 0, 40)
-SpeedButton.Position = UDim2.new(0, 10, 0, 10)
-SpeedButton.Text = "Activar Boost Velocidad"
-SpeedButton.BackgroundColor3 = Color3.new(0.1, 0.6, 0.2)
-SpeedButton.TextColor3 = Color3.new(1, 1, 1)
-SpeedButton.Parent = Frame
-
-JumpSliderFrame.Size = UDim2.new(1, -20, 0, 60)
-JumpSliderFrame.Position = UDim2.new(0, 10, 0, 60)
-JumpSliderFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-JumpSliderFrame.Parent = Frame
-
-JumpLabel.Size = UDim2.new(1, 0, 0, 20)
-JumpLabel.Position = UDim2.new(0, 0, 0, 0)
-JumpLabel.Text = "Altura de salto: 100"
-JumpLabel.TextColor3 = Color3.new(1, 1, 1)
-JumpLabel.BackgroundTransparency = 1
-JumpLabel.Parent = JumpSliderFrame
-
-SliderBar.Size = UDim2.new(1, -20, 0, 10)
-SliderBar.Position = UDim2.new(0, 10, 0, 30)
-SliderBar.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-SliderBar.Parent = JumpSliderFrame
-
-SliderKnob.Size = UDim2.new(0, 10, 0, 20)
-SliderKnob.Position = UDim2.new(0.45, 0, 0, 25)
-SliderKnob.BackgroundColor3 = Color3.new(0.9, 0.4, 0.1)
-SliderKnob.Text = ""
-SliderKnob.Parent = JumpSliderFrame
-
-CloseButton.Size = UDim2.new(1, -20, 0, 30)
-CloseButton.Position = UDim2.new(0, 10, 1, -40)
-CloseButton.Text = "Cerrar Menú"
-CloseButton.BackgroundColor3 = Color3.new(0.6, 0.1, 0.1)
-CloseButton.TextColor3 = Color3.new(1, 1, 1)
-CloseButton.Parent = Frame
-
--- Función Boost Velocidad
-SpeedButton.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-
-    if humanoid then
-        humanoid.WalkSpeed = humanoid.WalkSpeed * 2
+-- Función para activar o desactivar el Salto Infinito
+local function toggleInfiniteJump(state)
+    infiniteJumpEnabled = state
+    if state then
+        Humanoid.StateChanged:Connect(function(oldState, newState)
+            if newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Freefall then
+                if infiniteJumpEnabled then
+                    wait()
+                    Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end
+        end)
     end
-end)
+end
 
--- Función para actualizar altura de salto
-local function updateJumpPower(percent)
-    local jumpPower = math.floor(50 + (percent * 150)) -- Rango de 50 a 200
-    JumpLabel.Text = "Altura de salto: " .. jumpPower
+-- Función para activar o desactivar el Wallhack (ESP)
+local function toggleWallhack(state)
+    wallhackEnabled = state
+    if state then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character.Humanoid then
+                -- Crea una etiqueta sobre la cabeza del jugador
+                local head = player.Character:WaitForChild("Head")
+                if head and head:FindFirstChild("PlayerESP") == nil then
+                    local billboardGui = Instance.new("BillboardGui")
+                    billboardGui.Name = "PlayerESP"
+                    billboardGui.Size = UDim2.new(0, 100, 0, 50)
+                    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+                    billboardGui.AlwaysOnTop = true
 
-    local char = LocalPlayer.Character
-    if char then
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.JumpPower = jumpPower
+                    local textLabel = Instance.new("TextLabel")
+                    textLabel.Text = player.Name
+                    textLabel.Size = UDim2.new(1, 0, 1, 0)
+                    textLabel.Font = Enum.Font.SourceSans
+                    textLabel.TextSize = 14
+                    textLabel.TextColor3 = Color3.new(1, 0, 0) -- Color rojo
+                    textLabel.BackgroundTransparency = 1
+                    textLabel.Parent = billboardGui
+
+                    billboardGui.Parent = head
+                end
+            end
+        end
+    else
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("Head") then
+                local esp = player.Character.Head:FindFirstChild("PlayerESP")
+                if esp then
+                    esp:Destroy()
+                end
+            end
         end
     end
 end
 
--- Control del slider
-local dragging = false
-SliderKnob.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
+-- Función para activar o desactivar el Atraviesa-Muros (NoClip)
+local function toggleNoClip(state)
+    noClipEnabled = state
+    for _, child in ipairs(Character:GetChildren()) do
+        if child:IsA("BasePart") then
+            child.CanCollide = not state
+        end
     end
+end
+
+-- Creamos el menú
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ModMenu"
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 250)
+frame.Position = UDim2.new(0.5, -100, 0.5, -125)
+frame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "Mod Menu"
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+title.Parent = frame
+
+local infiniteJumpButton = Instance.new("TextButton")
+infiniteJumpButton.Size = UDim2.new(1, -20, 0, 40)
+infiniteJumpButton.Position = UDim2.new(0, 10, 0, 40)
+infiniteJumpButton.Text = "Salto Infinito: OFF"
+infiniteJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+infiniteJumpButton.Parent = frame
+
+infiniteJumpButton.MouseButton1Click:Connect(function()
+    toggleInfiniteJump(not infiniteJumpEnabled)
+    infiniteJumpButton.Text = "Salto Infinito: " .. (infiniteJumpEnabled and "ON" or "OFF")
 end)
 
-SliderKnob.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-    end
+local wallhackButton = Instance.new("TextButton")
+wallhackButton.Size = UDim2.new(1, -20, 0, 40)
+wallhackButton.Position = UDim2.new(0, 10, 0, 90)
+wallhackButton.Text = "Wallhack (ESP): OFF"
+wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+wallhackButton.Parent = frame
+
+wallhackButton.MouseButton1Click:Connect(function()
+    toggleWallhack(not wallhackEnabled)
+    wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local absPos = SliderBar.AbsolutePosition.X
-        local absSize = SliderBar.AbsoluteSize.X
-        local percent = math.clamp((input.Position.X - absPos) / absSize, 0, 1)
-        SliderKnob.Position = UDim2.new(percent, -5, 0, 25)
-        updateJumpPower(percent)
-    end
-end)
+local noClipButton = Instance.new("TextButton")
+noClipButton.Size = UDim2.new(1, -20, 0, 40)
+noClipButton.Position = UDim2.new(0, 10, 0, 140)
+noClipButton.Text = "Atraviesa Muros: OFF"
+noClipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+noClipButton.Parent = frame
 
--- Inicializar con 100
-updateJumpPower(0.33)
-
--- Cerrar menú
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
+noClipButton.MouseButton1Click:Connect(function()
+    toggleNoClip(not noClipEnabled)
+    noClipButton.Text = "Atraviesa Muros: " .. (noClipEnabled and "ON" or "OFF")
 end)
