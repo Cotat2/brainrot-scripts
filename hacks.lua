@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Corregida 1.5 - Servidor)
+-- Script con menú estilo Hub para Delta (Versión Corregida 1.6 - Cursor arreglado)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -312,7 +312,7 @@ local function createMenu()
     ghostModeButton.Parent = playerTab
     ghostModeButton.MouseButton1Click:Connect(function()
         toggleFakeInvisibility(not fakeInvisibilityEnabled)
-        ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
+        ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilidad and "ON" or "OFF")
     end)
     
     local speedHackButton = Instance.new("TextButton")
@@ -379,6 +379,10 @@ local function createMenu()
         showButton.Visible = false
     end)
 
+    -- CÓDIGO AÑADIDO: Configura el cursor del ratón
+    local mouse = LocalPlayer:GetMouse()
+    mouse.Icon = ""
+    
     return screenGui
 end
 
