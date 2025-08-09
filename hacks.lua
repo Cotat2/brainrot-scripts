@@ -393,6 +393,17 @@ local function createMenu()
         toggleSpeedHack(not speedHackEnabled)
         speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
     end)
+
+    local baseESPButton = Instance.new("TextButton")
+    baseESPButton.Size = UDim2.new(0, 180, 0, 40)
+    baseESPButton.Position = UDim2.new(0, 20, 0, 260) -- Posición ajustada para la nueva pestaña
+    baseESPButton.Text = "Base ESP: OFF"
+    baseESPButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    baseESPButton.Parent = playerTab
+    baseESPButton.MouseButton1Click:Connect(function()
+        toggleBaseESP(not baseESPEnabled)
+        baseESPButton.Text = "Base ESP: " .. (baseESPEnabled and "ON" or "OFF")
+    end)
      
     -- Stealer Tab
     local advancedNoclipButton = Instance.new("TextButton")
@@ -421,18 +432,6 @@ local function createMenu()
             toggleTeleportToBase(false)
         end
     end)
-
-    local baseESPButton = Instance.new("TextButton")
-    baseESPButton.Size = UDim2.new(0, 180, 0, 40)
-    baseESPButton.Position = UDim2.new(0, 20, 0, 140)
-    baseESPButton.Text = "Base ESP: OFF"
-    baseESPButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    baseESPButton.Parent = stealerTab
-    baseESPButton.MouseButton1Click:Connect(function()
-        toggleBaseESP(not baseESPEnabled)
-        baseESPButton.Text = "Base ESP: " .. (baseESPEnabled and "ON" or "OFF")
-    end)
-
 
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
