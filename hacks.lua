@@ -14,7 +14,6 @@ local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
 local advancedNoclipEnabled = false
 local teleportToBaseEnabled = false
-local baseESPEnabled = false  -- Nueva variable para Base ESP
 local noclipLoop = nil
 local baseLocation = nil
 
@@ -210,47 +209,6 @@ local function toggleTeleportToBase(state)
     end
 end
 
--- NUEVA FUNCIÓN: Base ESP (sin temporizador)
-local function toggleBaseESP(state)
-    baseESPEnabled = state
-    local bases = workspace:WaitForChild("Bases") -- Asumimos que las bases están dentro de una carpeta llamada "Bases"
-
-    if state then
-        for _, player in ipairs(Players:GetPlayers()) do
-            -- Buscamos el objeto de la base del jugador
-            local playerBase = bases:FindFirstChild(player.Name .. "Base") -- Asumimos que las bases se llaman "NombreJugadorBase"
-            if playerBase and playerBase:FindFirstChild("BaseESP") == nil then
-                local billboardGui = Instance.new("BillboardGui")
-                billboardGui.Name = "BaseESP"
-                billboardGui.Size = UDim2.new(0, 200, 0, 100)
-                billboardGui.StudsOffset = Vector3.new(0, 5, 0)
-                billboardGui.AlwaysOnTop = true
-
-                local textLabel = Instance.new("TextLabel")
-                textLabel.Text = player.Name .. "'s Base"
-                textLabel.Size = UDim2.new(1, 0, 1, 0)
-                textLabel.Font = Enum.Font.SourceSansBold
-                textLabel.TextSize = 20
-                textLabel.TextColor3 = Color3.new(0.9, 0.9, 0.9)
-                textLabel.BackgroundTransparency = 1
-                textLabel.Parent = billboardGui
-
-                billboardGui.Parent = playerBase
-            end
-        end
-    else
-        for _, player in ipairs(Players:GetPlayers()) do
-            local playerBase = bases:FindFirstChild(player.Name .. "Base")
-            if playerBase then
-                local esp = playerBase:FindFirstChild("BaseESP")
-                if esp then
-                    esp:Destroy()
-                end
-            end
-        end
-    end
-end
-
 
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
@@ -393,17 +351,6 @@ local function createMenu()
         toggleSpeedHack(not speedHackEnabled)
         speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
     end)
-
-    local baseESPButton = Instance.new("TextButton")
-    baseESPButton.Size = UDim2.new(0, 180, 0, 40)
-    baseESPButton.Position = UDim2.new(0, 20, 0, 260) -- Posición ajustada para la nueva pestaña
-    baseESPButton.Text = "Base ESP: OFF"
-    baseESPButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    baseESPButton.Parent = playerTab
-    baseESPButton.MouseButton1Click:Connect(function()
-        toggleBaseESP(not baseESPEnabled)
-        baseESPButton.Text = "Base ESP: " .. (baseESPEnabled and "ON" or "OFF")
-    end)
      
     -- Stealer Tab
     local advancedNoclipButton = Instance.new("TextButton")
