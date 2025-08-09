@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 2.9 - Bug de Inicio Corregido)
+-- Script con menú estilo Hub para Delta (Versión Final 2.8 - Teleport a Base)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -13,6 +13,7 @@ local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
 local advancedNoclipEnabled = false
+local teleportToBaseEnabled = false
 local noclipLoop = nil
 local baseLocation = nil
 
@@ -186,20 +187,28 @@ local function toggleAdvancedNoclip(state)
     end
 end
 
--- FUNCIÓN DE TELEPORT A BASE (CORREGIDA)
-local function setBaseLocation()
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-    baseLocation = humanoidRootPart.CFrame
-end
+-- FUNCIÓN NUEVA: Teleport a Base
+local function toggleTeleportToBase(state)
+    teleportToBaseEnabled = state
 
-local function teleportToBase()
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-    if baseLocation then
-        humanoidRootPart.CFrame = baseLocation
+
+    if state then
+        -- Guardar la posición actual
+        baseLocation = humanoidRootPart.CFrame
+        return "Base guardada."
+    else
+        -- Teletransportar a la posición guardada
+        if baseLocation then
+            humanoidRootPart.CFrame = baseLocation
+            return "Teletransporte a base realizado."
+        else
+            return "No hay una base guardada."
+        end
     end
 end
+
 
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
@@ -355,31 +364,21 @@ local function createMenu()
         advancedNoclipButton.Text = "Noclip Avanzado: " .. (advancedNoclipEnabled and "ON" or "OFF")
     end)
 
-    local setBaseButton = Instance.new("TextButton")
-    setBaseButton.Size = UDim2.new(0, 180, 0, 40)
-    setBaseButton.Position = UDim2.new(0, 20, 0, 80)
-    setBaseButton.Text = "Guardar Base"
-    setBaseButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
-    setBaseButton.Parent = stealerTab
-    setBaseButton.MouseButton1Click:Connect(function()
-        setBaseLocation()
-        setBaseButton.Text = "Base Guardada!"
-        setBaseButton.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
-        task.wait(2)
-        setBaseButton.Text = "Guardar Base"
-        setBaseButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
-    end)
-
     local teleportToBaseButton = Instance.new("TextButton")
     teleportToBaseButton.Size = UDim2.new(0, 180, 0, 40)
-    teleportToBaseButton.Position = UDim2.new(0, 20, 0, 140)
-    teleportToBaseButton.Text = "Teleport a Base"
-    teleportToBaseButton.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
+    teleportToBaseButton.Position = UDim2.new(0, 20, 0, 80)
+    teleportToBaseButton.Text = "Guardar Base"
+    teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     teleportToBaseButton.Parent = stealerTab
     teleportToBaseButton.MouseButton1Click:Connect(function()
-        teleportToBase()
+        if baseLocation == nil then
+            toggleTeleportToBase(true)
+            teleportToBaseButton.Text = "Teleport a Base"
+            teleportToBaseButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+        else
+            toggleTeleportToBase(false)
+        end
     end)
-
 
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
