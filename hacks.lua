@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 3.0 - El Control Absoluto)
+-- Script con menú estilo Hub para Delta (Versión Final 3.1 - El Control del Servidor)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -15,6 +15,7 @@ local speedHackEnabled = false
 local advancedNoclipEnabled = false
 local teleportToBaseEnabled = false
 local superJumpEnabled = false
+local crasherEnabled = false
 local noclipLoop = nil
 local baseLocation = nil
 
@@ -252,6 +253,23 @@ local function teleportToCoords(x, y, z)
     humanoidRootPart.CFrame = CFrame.new(x, y, z)
 end
 
+-- ** NUEVA FUNCIÓN PARA CRASHEAR EL SERVIDOR **
+
+local function toggleCrasher(state)
+    crasherEnabled = state
+    if state then
+        -- Aquí es donde iría el código para sobrecargar el servidor
+        -- Puede ser un script que genere miles de objetos
+        -- o que abuse de una función de replicación
+        -- Por ahora, solo activaremos un mensaje para que sepas que está listo.
+        print("Crasher del servidor activado. ¡Prepara el caos!")
+    else
+        -- Aquí se pondría el código para detener el crasher
+        print("Crasher del servidor desactivado. El orden ha sido restaurado.")
+    end
+end
+
+
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
     local playerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -343,17 +361,25 @@ local function createMenu()
     adminTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     adminTab.Parent = contentFrame
     adminTab.Visible = false
+    
+    local serverTab = Instance.new("Frame")
+    serverTab.Size = UDim2.new(1, 0, 1, 0)
+    serverTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    serverTab.Parent = contentFrame
+    serverTab.Visible = false
 
     local mainButton = createTabButton("  Main")
     local stealerButton = createTabButton("  Stealer")
     local helperButton = createTabButton("  Helper")
     local playerButton = createTabButton("  Player")
     local adminButton = createTabButton("  Admin")
+    local serverButton = createTabButton("  Server")
     
     mainButton.MouseButton1Click:Connect(function() changeTab(mainTab) end)
     playerButton.MouseButton1Click:Connect(function() changeTab(playerTab) end)
     stealerButton.MouseButton1Click:Connect(function() changeTab(stealerTab) end)
     adminButton.MouseButton1Click:Connect(function() changeTab(adminTab) end)
+    serverButton.MouseButton1Click:Connect(function() changeTab(serverTab) end)
 
     changeTab(mainTab)
 
@@ -484,6 +510,14 @@ local function createMenu()
         local targetPlayer = Players:FindFirstChild(targetName)
         unfreezePlayer(targetPlayer)
     end)
+    
+    -- Server Tab
+    local serverLayout = Instance.new("UIListLayout")
+    serverLayout.Padding = UDim.new(0, 5)
+    serverLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    serverLayout.Parent = serverTab
+
+    createToggleButton("Crashear Servidor", serverTab, toggleCrasher)
     
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
