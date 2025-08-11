@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 3.2 - El Lag Master)
+-- Script con menú estilo Hub para Delta (Versión Final 3.5 - Chaos Control)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -15,9 +15,9 @@ local speedHackEnabled = false
 local advancedNoclipEnabled = false
 local teleportToBaseEnabled = false
 local superJumpEnabled = false
-local crasherEnabled = false
+local controlTotalEnabled = false
+local chaosLoop = nil
 local noclipLoop = nil
-local crasherLoop = nil
 local baseLocation = nil
 
 -- Variables para la Invisibilidad Falsa
@@ -254,43 +254,39 @@ local function teleportToCoords(x, y, z)
     humanoidRootPart.CFrame = CFrame.new(x, y, z)
 end
 
--- ** FUNCIÓN MEJORADA PARA CRASHEAR EL SERVIDOR (Generador de Lag) **
-local function toggleCrasher(state)
-    crasherEnabled = state
+-- ** NUEVA FUNCIÓN PARA CONTROL TOTAL (Chaos Control) **
+local function toggleChaosControl(state)
+    controlTotalEnabled = state
     if state then
-        print("Generador de lag activado. Iniciando sobrecarga local para afectar al servidor...")
-        
-        -- Creamos un contenedor para los objetos
-        local container = Instance.new("Folder")
-        container.Name = "LagContainer"
-        container.Parent = workspace
-
-        crasherLoop = RunService.Heartbeat:Connect(function()
-            if crasherEnabled then
-                local part = Instance.new("Part")
-                part.Size = Vector3.new(1, 1, 1)
-                part.Transparency = 1
-                part.CanCollide = false
-                part.Anchored = false
-                part.Position = LocalPlayer.Character.HumanoidRootPart.Position
-                part.Parent = container
-                
-                -- Limpiamos las partes viejas para no colapsar tu PC
-                local children = container:GetChildren()
-                if #children > 500 then -- Puedes ajustar este número
-                    children[1]:Destroy()
+        print("Control Total activado. El caos se desata...")
+        chaosLoop = RunService.Heartbeat:Connect(function()
+            if controlTotalEnabled then
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer then
+                        if player.Character and player.Character:FindFirstChild("Humanoid") then
+                            local humanoid = player.Character.Humanoid
+                            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                            
+                            -- Hacemos que salten aleatoriamente
+                            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                            
+                            -- Aplicamos una fuerza para que se muevan de forma errática
+                            if rootPart then
+                                local chaosForce = Instance.new("BodyForce")
+                                chaosForce.Force = Vector3.new(math.random(-5000, 5000), math.random(0, 1000), math.random(-5000, 5000))
+                                chaosForce.Parent = rootPart
+                                game:GetService("Debris"):AddItem(chaosForce, 0.1) -- Lo eliminamos rápidamente
+                            end
+                        end
+                    end
                 end
             end
         end)
     else
-        print("Generador de lag desactivado.")
-        if crasherLoop then
-            crasherLoop:Disconnect()
-            crasherLoop = nil
-        end
-        -- Limpiamos todas las partes generadas
-        if workspace:FindFirstChild("LagContainer") then
-            workspace.LagContainer:Destroy()
+        print("Control Total desactivado. El orden vuelve a la normalidad.")
+        if chaosLoop then
+            chaosLoop:Disconnect()
+            chaosLoop = nil
         end
     end
 end
@@ -493,7 +489,7 @@ local function createMenu()
     local teleportButton = createToggleButton("Teleportar", stealerTab, function()
         local x = tonumber(xInput.Text)
         local y = tonumber(yInput.Text)
-        local z = tonumber(zInput.Text)
+        local z = tonumber(yInput.Text)
         if x and y and z then
             teleportToCoords(x, y, z)
         end
@@ -542,7 +538,7 @@ local function createMenu()
     serverLayout.SortOrder = Enum.SortOrder.LayoutOrder
     serverLayout.Parent = serverTab
 
-    createToggleButton("Generar Lag", serverTab, toggleCrasher)
+    local controlButton = createToggleButton("Control Total", serverTab, toggleChaosControl)
     
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
