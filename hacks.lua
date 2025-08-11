@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 2.8 - Teleport a Base)
+-- Script con menú estilo Hub para Delta (Versión Final 3.0 - El Control Absoluto)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -14,11 +14,16 @@ local fakeInvisibilityEnabled = false
 local speedHackEnabled = false
 local advancedNoclipEnabled = false
 local teleportToBaseEnabled = false
+local superJumpEnabled = false
 local noclipLoop = nil
 local baseLocation = nil
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
+
+-- Valores por defecto
+local defaultWalkSpeed = 16
+local defaultJumpPower = 50
 
 -- Función para manejar el Salto Múltiple
 local function handleJump(humanoid)
@@ -128,7 +133,7 @@ local function toggleSpeedHack(state)
     if state then
         humanoid.WalkSpeed = 50
     else
-        humanoid.WalkSpeed = 16
+        humanoid.WalkSpeed = defaultWalkSpeed
     end
 end
 
@@ -179,7 +184,7 @@ local function toggleAdvancedNoclip(state)
                 part.CanCollide = true
             end
         end
-        humanoid.WalkSpeed = 16
+        humanoid.WalkSpeed = defaultWalkSpeed
         if noclipLoop then
             noclipLoop:Disconnect()
             noclipLoop = nil
@@ -209,6 +214,43 @@ local function toggleTeleportToBase(state)
     end
 end
 
+-- ** NUEVOS PODERES DE NUESTRA CONVERSACIÓN **
+
+-- Súper Salto
+local function toggleSuperJump(state)
+    superJumpEnabled = state
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    if state then
+        humanoid.JumpPower = 150
+    else
+        humanoid.JumpPower = defaultJumpPower
+    end
+end
+
+-- Congelar Jugador
+local function freezePlayer(targetPlayer)
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+        targetPlayer.Character.Humanoid.WalkSpeed = 0
+        targetPlayer.Character.Humanoid.JumpPower = 0
+    end
+end
+
+-- Descongelar Jugador
+local function unfreezePlayer(targetPlayer)
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+        targetPlayer.Character.Humanoid.WalkSpeed = defaultWalkSpeed
+        targetPlayer.Character.Humanoid.JumpPower = defaultJumpPower
+    end
+end
+
+-- Teleport a Coordenadas
+local function teleportToCoords(x, y, z)
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    humanoidRootPart.CFrame = CFrame.new(x, y, z)
+end
 
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
@@ -244,29 +286,11 @@ local function createMenu()
     titleLabel.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
     titleLabel.Parent = navFrame
 
-    local function createTabButton(text, yOffset)
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, 0, 0, 40)
-        button.Position = UDim2.new(0, 0, 0, yOffset)
-        button.Text = text
-        button.Font = Enum.Font.SourceSansBold
-        button.TextSize = 16
-        button.TextColor3 = Color3.new(0.6, 0.6, 0.6)
-        button.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-        button.TextXAlignment = Enum.TextXAlignment.Left
-        button.TextScaled = true
-        button.Parent = navFrame
-        return button
-    end
-
-    local mainButton = createTabButton("  Main", 40)
-    local stealerButton = createTabButton("  Stealer", 80)
-    local helperButton = createTabButton("  Helper", 120)
-    local playerButton = createTabButton("  Player", 160)
-    local finderButton = createTabButton("  Finder", 200)
-    local serverButton = createTabButton("  Server", 240)
-    local discordButton = createTabButton("  Discord!", 280)
-
+    local tabLayout = Instance.new("UIListLayout")
+    tabLayout.Padding = UDim.new(0, 5)
+    tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabLayout.Parent = navFrame
+    
     local contentFrame = Instance.new("Frame")
     contentFrame.Size = UDim2.new(1, -150, 1, -40)
     contentFrame.Position = UDim2.new(0, 150, 0, 40)
@@ -280,6 +304,20 @@ local function createMenu()
         end
         currentTab = tabFrame
         currentTab.Visible = true
+    end
+
+    local function createTabButton(text)
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, 0, 0, 40)
+        button.Text = text
+        button.Font = Enum.Font.SourceSansBold
+        button.TextSize = 16
+        button.TextColor3 = Color3.new(0.6, 0.6, 0.6)
+        button.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+        button.TextXAlignment = Enum.TextXAlignment.Left
+        button.TextScaled = true
+        button.Parent = navFrame
+        return button
     end
 
     local mainTab = Instance.new("Frame")
@@ -300,73 +338,77 @@ local function createMenu()
     stealerTab.Parent = contentFrame
     stealerTab.Visible = false
 
+    local adminTab = Instance.new("Frame")
+    adminTab.Size = UDim2.new(1, 0, 1, 0)
+    adminTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    adminTab.Parent = contentFrame
+    adminTab.Visible = false
+
+    local mainButton = createTabButton("  Main")
+    local stealerButton = createTabButton("  Stealer")
+    local helperButton = createTabButton("  Helper")
+    local playerButton = createTabButton("  Player")
+    local adminButton = createTabButton("  Admin")
+    
     mainButton.MouseButton1Click:Connect(function() changeTab(mainTab) end)
     playerButton.MouseButton1Click:Connect(function() changeTab(playerTab) end)
     stealerButton.MouseButton1Click:Connect(function() changeTab(stealerTab) end)
+    adminButton.MouseButton1Click:Connect(function() changeTab(adminTab) end)
 
     changeTab(mainTab)
 
+    local function createSectionTitle(title, parent)
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 0, 20)
+        label.Text = title
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+        label.Parent = parent
+    end
+
+    local function createToggleButton(text, parent, toggleFunc)
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, -20, 0, 40)
+        button.Position = UDim2.new(0, 10, 0, 0)
+        button.Text = text .. ": OFF"
+        button.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+        button.Parent = parent
+        button.MouseButton1Click:Connect(function()
+            local state = button.Text:find("OFF")
+            if state then
+                toggleFunc(true)
+                button.Text = text .. ": ON"
+            else
+                toggleFunc(false)
+                button.Text = text .. ": OFF"
+            end
+        end)
+        return button
+    end
+
     -- Player Tab
-    local multipleJumpButton = Instance.new("TextButton")
-    multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
-    multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
-    multipleJumpButton.Text = "Salto Múltiple: OFF"
-    multipleJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    multipleJumpButton.Parent = playerTab
-    multipleJumpButton.MouseButton1Click:Connect(function()
-        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-        toggleMultipleJump(not multipleJumpEnabled, humanoid)
-        multipleJumpButton.Text = "Salto Múltiple: " .. (multipleJumpEnabled and "ON" or "OFF")
-    end)
+    local playerLayout = Instance.new("UIListLayout")
+    playerLayout.Padding = UDim.new(0, 5)
+    playerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    playerLayout.Parent = playerTab
 
-    local wallhackButton = Instance.new("TextButton")
-    wallhackButton.Size = UDim2.new(0, 180, 0, 40)
-    wallhackButton.Position = UDim2.new(0, 20, 0, 80)
-    wallhackButton.Text = "Wallhack (ESP): OFF"
-    wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    wallhackButton.Parent = playerTab
-    wallhackButton.MouseButton1Click:Connect(function()
-        toggleWallhack(not wallhackEnabled)
-        wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
-    end)
-
-    local ghostModeButton = Instance.new("TextButton")
-    ghostModeButton.Size = UDim2.new(0, 180, 0, 40)
-    ghostModeButton.Position = UDim2.new(0, 20, 0, 140)
-    ghostModeButton.Text = "Invisibilidad Falsa: OFF"
-    ghostModeButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    ghostModeButton.Parent = playerTab
-    ghostModeButton.MouseButton1Click:Connect(function()
-        toggleFakeInvisibility(not fakeInvisibilityEnabled)
-        ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
-    end)
-    
-    local speedHackButton = Instance.new("TextButton")
-    speedHackButton.Size = UDim2.new(0, 180, 0, 40)
-    speedHackButton.Position = UDim2.new(0, 20, 0, 200)
-    speedHackButton.Text = "Speed Hack: OFF"
-    speedHackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    speedHackButton.Parent = playerTab
-    speedHackButton.MouseButton1Click:Connect(function()
-        toggleSpeedHack(not speedHackEnabled)
-        speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
-    end)
+    createToggleButton("Salto Múltiple", playerTab, toggleMultipleJump)
+    createToggleButton("Wallhack (ESP)", playerTab, toggleWallhack)
+    createToggleButton("Invisibilidad Falsa", playerTab, toggleFakeInvisibility)
+    createToggleButton("Speed Hack", playerTab, toggleSpeedHack)
+    createToggleButton("Super Salto", playerTab, toggleSuperJump)
     
     -- Stealer Tab
-    local advancedNoclipButton = Instance.new("TextButton")
-    advancedNoclipButton.Size = UDim2.new(0, 180, 0, 40)
-    advancedNoclipButton.Position = UDim2.new(0, 20, 0, 20)
-    advancedNoclipButton.Text = "Noclip Avanzado: OFF"
-    advancedNoclipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    advancedNoclipButton.Parent = stealerTab
-    advancedNoclipButton.MouseButton1Click:Connect(function()
-        toggleAdvancedNoclip(not advancedNoclipEnabled)
-        advancedNoclipButton.Text = "Noclip Avanzado: " .. (advancedNoclipEnabled and "ON" or "OFF")
-    end)
+    local stealerLayout = Instance.new("UIListLayout")
+    stealerLayout.Padding = UDim.new(0, 5)
+    stealerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    stealerLayout.Parent = stealerTab
+
+    createToggleButton("Noclip Avanzado", stealerTab, toggleAdvancedNoclip)
 
     local teleportToBaseButton = Instance.new("TextButton")
-    teleportToBaseButton.Size = UDim2.new(0, 180, 0, 40)
-    teleportToBaseButton.Position = UDim2.new(0, 20, 0, 80)
+    teleportToBaseButton.Size = UDim2.new(1, -20, 0, 40)
+    teleportToBaseButton.Position = UDim2.new(0, 10, 0, 0)
     teleportToBaseButton.Text = "Guardar Base"
     teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     teleportToBaseButton.Parent = stealerTab
@@ -377,9 +419,72 @@ local function createMenu()
             teleportToBaseButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
         else
             toggleTeleportToBase(false)
+            teleportToBaseButton.Text = "Guardar Base"
+            teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
         end
     end)
+    
+    local coordsInputTitle = createSectionTitle("Teleport a Coordenadas", stealerTab)
+    local xInput = Instance.new("TextBox")
+    xInput.PlaceholderText = "X"
+    xInput.Size = UDim2.new(0.33, -10, 0, 30)
+    xInput.Parent = stealerTab
+    local yInput = Instance.new("TextBox")
+    yInput.PlaceholderText = "Y"
+    yInput.Size = UDim2.new(0.33, -10, 0, 30)
+    yInput.Position = UDim2.new(0.33, 0, 0, 0)
+    yInput.Parent = stealerTab
+    local zInput = Instance.new("TextBox")
+    zInput.PlaceholderText = "Z"
+    zInput.Size = UDim2.new(0.33, -10, 0, 30)
+    zInput.Position = UDim2.new(0.66, 0, 0, 0)
+    zInput.Parent = stealerTab
+    local teleportButton = createToggleButton("Teleportar", stealerTab, function()
+        local x = tonumber(xInput.Text)
+        local y = tonumber(yInput.Text)
+        local z = tonumber(zInput.Text)
+        if x and y and z then
+            teleportToCoords(x, y, z)
+        end
+    end)
+    
+    -- Admin Tab
+    local adminLayout = Instance.new("UIListLayout")
+    adminLayout.Padding = UDim.new(0, 5)
+    adminLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    adminLayout.Parent = adminTab
+    
+    local playerInputTitle = createSectionTitle("Control de Jugadores", adminTab)
+    local targetInput = Instance.new("TextBox")
+    targetInput.PlaceholderText = "Nombre del Jugador"
+    targetInput.Size = UDim2.new(1, -20, 0, 30)
+    targetInput.Position = UDim2.new(0, 10, 0, 0)
+    targetInput.Parent = adminTab
 
+    local freezeButton = Instance.new("TextButton")
+    freezeButton.Size = UDim2.new(0.5, -15, 0, 40)
+    freezeButton.Position = UDim2.new(0, 10, 0, 0)
+    freezeButton.Text = "Congelar"
+    freezeButton.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
+    freezeButton.Parent = adminTab
+    freezeButton.MouseButton1Click:Connect(function()
+        local targetName = targetInput.Text
+        local targetPlayer = Players:FindFirstChild(targetName)
+        freezePlayer(targetPlayer)
+    end)
+    
+    local unfreezeButton = Instance.new("TextButton")
+    unfreezeButton.Size = UDim2.new(0.5, -15, 0, 40)
+    unfreezeButton.Position = UDim2.new(0.5, 5, 0, 0)
+    unfreezeButton.Text = "Descongelar"
+    unfreezeButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+    unfreezeButton.Parent = adminTab
+    unfreezeButton.MouseButton1Click:Connect(function()
+        local targetName = targetInput.Text
+        local targetPlayer = Players:FindFirstChild(targetName)
+        unfreezePlayer(targetPlayer)
+    end)
+    
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
     hideButton.Position = UDim2.new(1, -25, 0, 5)
@@ -410,9 +515,6 @@ local function createMenu()
         mainFrame.Visible = true
         showButton.Visible = false
     end)
-
-    local mouse = LocalPlayer:GetMouse()
-    mouse.Icon = ""
     
     return screenGui
 end
