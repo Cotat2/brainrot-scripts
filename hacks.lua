@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 3.1 - El Control del Servidor)
+-- Script con menú estilo Hub para Delta (Versión Final 3.2 - El Lag Master)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -17,6 +17,7 @@ local teleportToBaseEnabled = false
 local superJumpEnabled = false
 local crasherEnabled = false
 local noclipLoop = nil
+local crasherLoop = nil
 local baseLocation = nil
 
 -- Variables para la Invisibilidad Falsa
@@ -253,22 +254,46 @@ local function teleportToCoords(x, y, z)
     humanoidRootPart.CFrame = CFrame.new(x, y, z)
 end
 
--- ** NUEVA FUNCIÓN PARA CRASHEAR EL SERVIDOR **
-
+-- ** FUNCIÓN MEJORADA PARA CRASHEAR EL SERVIDOR (Generador de Lag) **
 local function toggleCrasher(state)
     crasherEnabled = state
     if state then
-        -- Aquí es donde iría el código para sobrecargar el servidor
-        -- Puede ser un script que genere miles de objetos
-        -- o que abuse de una función de replicación
-        -- Por ahora, solo activaremos un mensaje para que sepas que está listo.
-        print("Crasher del servidor activado. ¡Prepara el caos!")
+        print("Generador de lag activado. Iniciando sobrecarga local para afectar al servidor...")
+        
+        -- Creamos un contenedor para los objetos
+        local container = Instance.new("Folder")
+        container.Name = "LagContainer"
+        container.Parent = workspace
+
+        crasherLoop = RunService.Heartbeat:Connect(function()
+            if crasherEnabled then
+                local part = Instance.new("Part")
+                part.Size = Vector3.new(1, 1, 1)
+                part.Transparency = 1
+                part.CanCollide = false
+                part.Anchored = false
+                part.Position = LocalPlayer.Character.HumanoidRootPart.Position
+                part.Parent = container
+                
+                -- Limpiamos las partes viejas para no colapsar tu PC
+                local children = container:GetChildren()
+                if #children > 500 then -- Puedes ajustar este número
+                    children[1]:Destroy()
+                end
+            end
+        end)
     else
-        -- Aquí se pondría el código para detener el crasher
-        print("Crasher del servidor desactivado. El orden ha sido restaurado.")
+        print("Generador de lag desactivado.")
+        if crasherLoop then
+            crasherLoop:Disconnect()
+            crasherLoop = nil
+        end
+        -- Limpiamos todas las partes generadas
+        if workspace:FindFirstChild("LagContainer") then
+            workspace.LagContainer:Destroy()
+        end
     end
 end
-
 
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
@@ -517,7 +542,7 @@ local function createMenu()
     serverLayout.SortOrder = Enum.SortOrder.LayoutOrder
     serverLayout.Parent = serverTab
 
-    createToggleButton("Crashear Servidor", serverTab, toggleCrasher)
+    createToggleButton("Generar Lag", serverTab, toggleCrasher)
     
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
