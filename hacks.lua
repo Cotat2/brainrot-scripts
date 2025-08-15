@@ -1,234 +1,433 @@
 -- Script con menú estilo Hub para Delta (Versión Final 2.8 - Teleport a Base)
-
 -- Variables principales
-Jugadores locales = juego:GetService("Jugadores")
-local LocalPlayer = Jugadores.LocalPlayer
-ServicioDeEntradaDeUsuario local = juego:ObtenerServicio("ServicioDeEntradaDeUsuario")
-RunService local = juego:GetService("RunService")
-últimaInstanciaDeMenú local = nula
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local lastMenuInstance = nil
 
 -- Estado de las funciones
-local multipleJumpEnabled = falso
-wallhackEnabled local = falso
-fakeInvisibilityEnabled local = falso
-local speedHackEnabled = falso
-local advancedNoclipEnabled = falso
-teleportToBaseEnabled local = falso
-noclipLoop local = nulo
-ubicación base local = nula
+local multipleJumpEnabled = false
+local wallhackEnabled = false
+local fakeInvisibilityEnabled = false
+local speedHackEnabled = false
+local advancedNoclipEnabled = false
+local teleportToBaseEnabled = false
+local noclipLoop = nil
+local baseLocation = nil
 
 -- Variables para la Invisibilidad Falsa
-fantasma localClone = nulo
+local ghostClone = nil
 
 -- Función para manejar el Salto Múltiple
-función local handleJump(humanoid)
-    Si multipleJumpEnabled entonces
-        Si humanoide y humanoide.Salud > 0 entonces
-            humanoide:ChangeState(Enum.HumanoidStateType.Jumping)
-        fin
-    fin
-fin
+local function handleJump(humanoid)
+    if multipleJumpEnabled then
+        if humanoid and humanoid.Health > 0 then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end
 
 -- Función para activar o desactivar el Salto Múltiple
-función local toggleMultipleJump(estado, humanoide)
-    multipleJumpEnabled = estado
-    Si el estado entonces
-        UserInputService.InputBegan:Connect(función(entrada, evento procesado por el juego)
-            si input.KeyCode == Enum.KeyCode.Space y no gameProcessedEvent entonces
-                handleJump(humanoide)
-            fin
-        fin)
-    fin
-fin
+local function toggleMultipleJump(state, humanoid)
+    multipleJumpEnabled = state
+    if state then
+        UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+            if input.KeyCode == Enum.KeyCode.Space and not gameProcessedEvent then
+                handleJump(humanoid)
+            end
+        end)
+    end
+end
 
 -- Función para activar o desactivar el Wallhack (ESP)
-función local toggleWallhack(estado)
-    wallhackEnabled = estado
-    Si el estado entonces
-        para _, jugador en ipairs(Players:GetPlayers()) hacer
-            si jugador ~= LocalPlayer y jugador.Character y jugador.Character:FindFirstChild("Humanoid") entonces
-                cabeza local = jugador.Personaje:BuscarPrimerHijo("Cabeza")
-                si cabeza y cabeza:FindFirstChild("PlayerESP") == nil entonces
-                    cartelera localGui = Instancia.new("BillboardGui")
-                    billboardGui.Name = "PlayerESP"
-                    carteleraGui.Tamaño = UDim2.nuevo(0, 100, 0, 50)
-                    carteleraGui.StudsOffset = Vector3.new(0, 3, 0)
-                    billboardGui.AlwaysOnTop = verdadero
+local function toggleWallhack(state)
+    wallhackEnabled = state
+    if state then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                local head = player.Character:FindFirstChild("Head")
+                if head and head:FindFirstChild("PlayerESP") == nil then
+                    local billboardGui = Instance.new("BillboardGui")
+                    billboardGui.Name = "PlayerESP"
+                    billboardGui.Size = UDim2.new(0, 100, 0, 50)
+                    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+                    billboardGui.AlwaysOnTop = true
 
-                    etiqueta de texto local = Instancia.new("Etiqueta de texto")
-                    textLabel.Text = jugador.Nombre
-                    etiquetaDeTexto.Tamaño = UDim2.nuevo(1, 0, 1, 0)
-                    etiquetaDeTexto.Fuente = Enumeración.Fuente.FuenteSans
-                    Etiqueta de texto.Tamaño del texto = 14
-                    EtiquetaDeTexto.ColorDeTexto3 = Color3.nuevo(1, 0, 0)
-                    Etiqueta de texto.Transparencia de fondo = 1
-                    EtiquetaDeTexto.Padre = billboardGui
+                    local textLabel = Instance.new("TextLabel")
+                    textLabel.Text = player.Name
+                    textLabel.Size = UDim2.new(1, 0, 1, 0)
+                    textLabel.Font = Enum.Font.SourceSans
+                    textLabel.TextSize = 14
+                    textLabel.TextColor3 = Color3.new(1, 0, 0)
+                    textLabel.BackgroundTransparency = 1
+                    textLabel.Parent = billboardGui
 
-                    billboardGui.Parent = cabeza
-                fin
-            fin
-        fin
-    demás
-        para _, jugador en ipairs(Players:GetPlayers()) hacer
-            si jugador.Carácter y jugador.Carácter:BuscarPrimerHijo("Cabeza") entonces
-                esp local = jugador.Personaje.Cabeza:BuscarPrimerHijo("JugadorESP")
-                si esp entonces
-                    esp:Destruir()
-                fin
-            fin
-        fin
-    fin
-fin
+                    billboardGui.Parent = head
+                end
+            end
+        end
+    else
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("Head") then
+                local esp = player.Character.Head:FindFirstChild("PlayerESP")
+                if esp then
+                    esp:Destroy()
+                end
+            end
+        end
+    end
+end
 
 -- Función para la Invisibilidad Falsa
-función local toggleFakeInvisibility(estado)
-    fakeInvisibilityEnabled = estado
-    personaje local = LocalPlayer.Character o LocalPlayer.CharacterAdded:Wait()
-    
-    Si el estado entonces
-        -- Creamos un clon visual del avatar
-        ghostClone = personaje:Clone()
-        ghostClone.Name = "GhostClone"
-        ghostClone.Parent = espacio de trabajo
-        
-        --Hacemos el clon inamovible
-        para _, parte en pares(ghostClone:GetChildren()) hacer
-            si parte:IsA("BasePart") entonces
-                parte.Anclado = verdadero
-                parte.CanCollide = falso
-            fin
-        fin
-        
-        -- Hacemos que el avatar real sea invisible localmente
-        para _, parte en pares(carácter:GetChildren()) hacer
-            si parte:IsA("BasePart") entonces
-                parte.ModificadorDeTransparenciaLocal = 1
-            fin
-        fin
-    demás
-        -- Eliminamos el clon y restauramos la visibilidad del avatar real.
-        Si ghostClone entonces
-            ghostClone:Destruir()
-            ghostClone = nulo
-        fin
-        para _, parte en pares(carácter:GetChildren()) hacer
-            si parte:IsA("BasePart") entonces
-                parte.Modificador de Transparencia Local = 0
-            fin
-        fin
-    fin
-fin
+local function toggleFakeInvisibility(state)
+    fakeInvisibilityEnabled = state
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    
+    if state then
+        -- Creamos un clon visual del avatar
+        ghostClone = character:Clone()
+        ghostClone.Name = "GhostClone"
+        ghostClone.Parent = workspace
+        
+        -- Hacemos el clon inamovible
+        for _, part in pairs(ghostClone:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Anchored = true
+                part.CanCollide = false
+            end
+        end
+        
+        -- Hacemos que el avatar real sea invisible localmente
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.LocalTransparencyModifier = 1
+            end
+        end
+    else
+        -- Eliminamos el clon y restauramos la visibilidad del avatar real
+        if ghostClone then
+            ghostClone:Destroy()
+            ghostClone = nil
+        end
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.LocalTransparencyModifier = 0
+            end
+        end
+    end
+end
 
 -- Función para activar o desactivar el Speed Hack
-función local toggleSpeedHack(estado)
-    speedHackEnabled = estado
-    personaje local = LocalPlayer.Character o LocalPlayer.CharacterAdded:Wait()
-    humanoide local = personaje:WaitForChild("Humanoide")
-    
-    Si el estado entonces
-        humanoide.WalkSpeed = 50
-    demás
-        humanoide.WalkSpeed = 16
-    fin
-fin
+local function toggleSpeedHack(state)
+    speedHackEnabled = state
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    if state then
+        humanoid.WalkSpeed = 50
+    else
+        humanoid.WalkSpeed = 16
+    end
+end
 
 -- FUNCIÓN DE NOCLIP AVANZADO
-función local toggleAdvancedNoclip(estado)
-    advancedNoclipEnabled = estado
+local function toggleAdvancedNoclip(state)
+    advancedNoclipEnabled = state
 
-    personaje local = LocalPlayer.Character o LocalPlayer.CharacterAdded:Wait()
-    ParteRaízHumanoide local = personaje:EsperaAlHijo("ParteRaízHumanoide")
-    humanoide local = personaje:WaitForChild("Humanoide")
-    cámara local = espacio de trabajo.CurrentCamera
-    velocidad local = 1,5
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
+    local camera = workspace.CurrentCamera
+    local speed = 1.5 
 
-    Si el estado entonces
-        -- Desactiva la colisión localmente
-        para _, parte en pares(carácter:GetChildren()) hacer
-            si parte:IsA("BasePart") entonces
-                parte.CanCollide = falso
-            fin
-        fin
-        humanoide.WalkSpeed = 0
+    if state then
+        -- Desactiva la colisión localmente
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+        humanoid.WalkSpeed = 0 
 
-        noclipLoop = RunService.Heartbeat:Conectar(función()
-            Si advancedNoclipEnabled entonces
-                movimiento localVector = Vector3.new(0, 0, 0)
-                si UserInputService:IsKeyDown(Enum.KeyCode.W) entonces
-                    moverVector = moverVector + cámara.CFrame.LookVector
-                fin
-                si UserInputService:IsKeyDown(Enum.KeyCode.S) entonces
-                    moveVector = moveVector - cámara.CFrame.LookVector
-                fin
-                si UserInputService:IsKeyDown(Enum.KeyCode.D) entonces
-                    moverVector = moverVector + cámara.CFrame.RightVector
-                fin
-                si UserInputService:IsKeyDown(Enum.KeyCode.A) entonces
-                    moveVector = moveVector - cámara.CFrame.RightVector
-                fin
+        noclipLoop = RunService.Heartbeat:Connect(function()
+            if advancedNoclipEnabled then
+                local moveVector = Vector3.new(0, 0, 0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    moveVector = moveVector + camera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    moveVector = moveVector - camera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    moveVector = moveVector + camera.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    moveVector = moveVector - camera.CFrame.RightVector
+                end
 
-                si moveVector.Magnitude > 0 entonces
-                    humanoidRootPart.CFrame = humanoidRootPart.CFrame + moveVector.Unit * velocidad
-                fin
-            fin
-        fin)
-    demás
-        -- Restaura la colisión, la velocidad y desconecta el loop
-        para _, parte en pares(carácter:GetChildren()) hacer
-            si parte:IsA("BasePart") entonces
-                parte.CanCollide = verdadero
-            fin
-        fin
-        humanoide.WalkSpeed = 16
-        Si noclipLoop entonces
-            noclipLoop:Desconectar()
-            noclipLoop = nulo
-        fin
-    fin
-fin
+                if moveVector.Magnitude > 0 then
+                    humanoidRootPart.CFrame = humanoidRootPart.CFrame + moveVector.Unit * speed
+                end
+            end
+        end)
+    else
+        -- Restaura la colisión, la velocidad y desconecta el loop
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+        humanoid.WalkSpeed = 16
+        if noclipLoop then
+            noclipLoop:Disconnect()
+            noclipLoop = nil
+        end
+    end
+end
 
--- FUNCIÓN NUEVA: Teletransportar una Base
-función local toggleTeleportToBase(estado)
-    teleportToBaseEnabled = estado
+-- FUNCIÓN NUEVA: Teleport a Base
+local function toggleTeleportToBase(state)
+    teleportToBaseEnabled = state
 
-    personaje local = LocalPlayer.Character o LocalPlayer.CharacterAdded:Wait()
-    ParteRaízHumanoide local = personaje:EsperaAlHijo("ParteRaízHumanoide")
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-    Si el estado entonces
-        -- Guardar la posición actual
-        baseLocation = humanoidRootPart.CFrame
-        devolver "Base guardada."
-    demás
-        -- Teletransportar a la posición guardada
-        Si baseLocation entonces
-            humanoidRootPart.CFrame = ubicaciónBase
-            return "Teletransporte a base realizado."
-        demás
-            return "No hay una base guardada."
-        fin
-    fin
-fin
+    if state then
+        -- Guardar la posición actual
+        baseLocation = humanoidRootPart.CFrame
+        return "Base guardada."
+    else
+        -- Teletransportar a la posición guardada
+        if baseLocation then
+            humanoidRootPart.CFrame = baseLocation
+            return "Teletransporte a base realizado."
+        else
+            return "No hay una base guardada."
+        end
+    end
+end
 
 
 -- Función que se encarga de crear el menú y su lógica
-función local createMenu()
-    Interfaz gráfica del jugador local = Jugador local:EsperarAlHijo("Interfaz gráfica del jugador")
-    si playerGui:FindFirstChild("HubMenu") entonces
-        playerGui:FindFirstChild("Menú del concentrador"):Destroy()
-    fin
+local function createMenu()
+    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+    if playerGui:FindFirstChild("HubMenu") then
+        playerGui:FindFirstChild("HubMenu"):Destroy()
+    end
 
-    screenGui local = Instancia.new("ScreenGui")
-    screenGui.Name = "Menú del concentrador"
-    screenGui.Parent = playerGui
-    
-    marco principal local = Instancia.new("Marco")
-    mainFrame.Size = UDim2.new(0, 500, 0, 400)
-    mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
-    mainFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-    Marco principal.BorderSizePixel = 0
-    mainFrame.Active = verdadero
-    mainFrame.Draggable = verdadero
-    Marco principal.Padre = screenGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "HubMenu"
+    screenGui.Parent = playerGui
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 500, 0, 400)
+    mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    mainFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.Parent = screenGui
 
-    navFrame local = Instancia.new("Marco")
-    navFrame.Tamaño = UDim2.nuevo(0, 1
+    local navFrame = Instance.new("Frame")
+    navFrame.Size = UDim2.new(0, 150, 1, 0)
+    navFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    navFrame.Parent = mainFrame
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0, 40)
+    titleLabel.Text = "Chilli Hub"
+    titleLabel.Font = Enum.Font.SourceSansBold
+    titleLabel.TextSize = 20
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
+    titleLabel.Parent = navFrame
+
+    local function createTabButton(text, yOffset)
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, 0, 0, 40)
+        button.Position = UDim2.new(0, 0, 0, yOffset)
+        button.Text = text
+        button.Font = Enum.Font.SourceSansBold
+        button.TextSize = 16
+        button.TextColor3 = Color3.new(0.6, 0.6, 0.6)
+        button.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+        button.TextXAlignment = Enum.TextXAlignment.Left
+        button.TextScaled = true
+        button.Parent = navFrame
+        return button
+    end
+
+    local mainButton = createTabButton("  Main", 40)
+    local stealerButton = createTabButton("  Stealer", 80)
+    local helperButton = createTabButton("  Helper", 120)
+    local playerButton = createTabButton("  Player", 160)
+    local finderButton = createTabButton("  Finder", 200)
+    local serverButton = createTabButton("  Server", 240)
+    local discordButton = createTabButton("  Discord!", 280)
+
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Size = UDim2.new(1, -150, 1, -40)
+    contentFrame.Position = UDim2.new(0, 150, 0, 40)
+    contentFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    contentFrame.Parent = mainFrame
+
+    local currentTab
+    local function changeTab(tabFrame)
+        if currentTab then
+            currentTab.Visible = false
+        end
+        currentTab = tabFrame
+        currentTab.Visible = true
+    end
+
+    local mainTab = Instance.new("Frame")
+    mainTab.Size = UDim2.new(1, 0, 1, 0)
+    mainTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    mainTab.Parent = contentFrame
+    mainTab.Visible = false
+
+    local playerTab = Instance.new("Frame")
+    playerTab.Size = UDim2.new(1, 0, 1, 0)
+    playerTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    playerTab.Parent = contentFrame
+    playerTab.Visible = false
+
+    local stealerTab = Instance.new("Frame")
+    stealerTab.Size = UDim2.new(1, 0, 1, 0)
+    stealerTab.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    stealerTab.Parent = contentFrame
+    stealerTab.Visible = false
+
+    mainButton.MouseButton1Click:Connect(function() changeTab(mainTab) end)
+    playerButton.MouseButton1Click:Connect(function() changeTab(playerTab) end)
+    stealerButton.MouseButton1Click:Connect(function() changeTab(stealerTab) end)
+
+    changeTab(mainTab)
+
+    -- Player Tab
+    local multipleJumpButton = Instance.new("TextButton")
+    multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
+    multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
+    multipleJumpButton.Text = "Salto Múltiple: OFF"
+    multipleJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    multipleJumpButton.Parent = playerTab
+    multipleJumpButton.MouseButton1Click:Connect(function()
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+        toggleMultipleJump(not multipleJumpEnabled, humanoid)
+        multipleJumpButton.Text = "Salto Múltiple: " .. (multipleJumpEnabled and "ON" or "OFF")
+    end)
+
+    local wallhackButton = Instance.new("TextButton")
+    wallhackButton.Size = UDim2.new(0, 180, 0, 40)
+    wallhackButton.Position = UDim2.new(0, 20, 0, 80)
+    wallhackButton.Text = "Wallhack (ESP): OFF"
+    wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    wallhackButton.Parent = playerTab
+    wallhackButton.MouseButton1Click:Connect(function()
+        toggleWallhack(not wallhackEnabled)
+        wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
+    end)
+
+    local ghostModeButton = Instance.new("TextButton")
+    ghostModeButton.Size = UDim2.new(0, 180, 0, 40)
+    ghostModeButton.Position = UDim2.new(0, 20, 0, 140)
+    ghostModeButton.Text = "Invisibilidad Falsa: OFF"
+    ghostModeButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    ghostModeButton.Parent = playerTab
+    ghostModeButton.MouseButton1Click:Connect(function()
+        toggleFakeInvisibility(not fakeInvisibilityEnabled)
+        ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
+    end)
+    
+    local speedHackButton = Instance.new("TextButton")
+    speedHackButton.Size = UDim2.new(0, 180, 0, 40)
+    speedHackButton.Position = UDim2.new(0, 20, 0, 200)
+    speedHackButton.Text = "Speed Hack: OFF"
+    speedHackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    speedHackButton.Parent = playerTab
+    speedHackButton.MouseButton1Click:Connect(function()
+        toggleSpeedHack(not speedHackEnabled)
+        speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
+    end)
+    
+    -- Stealer Tab
+    local advancedNoclipButton = Instance.new("TextButton")
+    advancedNoclipButton.Size = UDim2.new(0, 180, 0, 40)
+    advancedNoclipButton.Position = UDim2.new(0, 20, 0, 20)
+    advancedNoclipButton.Text = "Noclip Avanzado: OFF"
+    advancedNoclipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    advancedNoclipButton.Parent = stealerTab
+    advancedNoclipButton.MouseButton1Click:Connect(function()
+        toggleAdvancedNoclip(not advancedNoclipEnabled)
+        advancedNoclipButton.Text = "Noclip Avanzado: " .. (advancedNoclipEnabled and "ON" or "OFF")
+    end)
+
+    local teleportToBaseButton = Instance.new("TextButton")
+    teleportToBaseButton.Size = UDim2.new(0, 180, 0, 40)
+    teleportToBaseButton.Position = UDim2.new(0, 20, 0, 80)
+    teleportToBaseButton.Text = "Guardar Base"
+    teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    teleportToBaseButton.Parent = stealerTab
+    teleportToBaseButton.MouseButton1Click:Connect(function()
+        if baseLocation == nil then
+            toggleTeleportToBase(true)
+            teleportToBaseButton.Text = "Teleport a Base"
+            teleportToBaseButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+        else
+            toggleTeleportToBase(false)
+        end
+    end)
+
+    local hideButton = Instance.new("TextButton")
+    hideButton.Size = UDim2.new(0, 20, 0, 20)
+    hideButton.Position = UDim2.new(1, -25, 0, 5)
+    hideButton.Text = "-"
+    hideButton.Font = Enum.Font.SourceSansBold
+    hideButton.TextSize = 20
+    hideButton.TextColor3 = Color3.new(1, 1, 1)
+    hideButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    hideButton.Parent = mainFrame
+
+    local showButton = Instance.new("TextButton")
+    showButton.Size = UDim2.new(0, 50, 0, 50)
+    showButton.Position = UDim2.new(0.5, -25, 0.5, -25)
+    showButton.Text = "CH"
+    showButton.Font = Enum.Font.SourceSansBold
+    showButton.TextSize = 20
+    showButton.TextColor3 = Color3.new(1, 1, 1)
+    showButton.BackgroundColor3 = Color3.new(0.5, 0.2, 0.2)
+    showButton.Visible = false
+    showButton.Parent = screenGui
+
+    hideButton.MouseButton1Click:Connect(function()
+        mainFrame.Visible = false
+        showButton.Visible = true
+    end)
+
+    showButton.MouseButton1Click:Connect(function()
+        mainFrame.Visible = true
+        showButton.Visible = false
+    end)
+
+    local mouse = LocalPlayer:GetMouse()
+    mouse.Icon = ""
+    
+    return screenGui
+end
+
+local function onCharacterAdded(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    if lastMenuInstance then
+        lastMenuInstance.Parent = LocalPlayer.PlayerGui
+    else
+        lastMenuInstance = createMenu()
+        lastMenuInstance.Parent = LocalPlayer.PlayerGui
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
+end
