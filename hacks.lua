@@ -1,4 +1,6 @@
 -- Script con menú estilo Hub para Delta (Versión Final 2.8 - Teleport a Base)
+-- CORREGIDA: Funcionalidad de Jump Boost ajustable.
+
 -- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -18,6 +20,25 @@ local baseLocation = nil
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
+
+-- VARIABLES PARA JUMP BOOST
+local jumpBoostEnabled = false
+local jumpHeight = 50 -- Altura de salto inicial
+
+-- Función para manejar el Jump Boost
+local function activateJumpBoost(newJumpHeight)
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.JumpPower = newJumpHeight
+    end
+end
+
+local function deactivateJumpBoost()
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.JumpPower = 50 -- Valor por defecto
+    end
+end
 
 -- Función para manejar el Salto Múltiple
 local function handleJump(humanoid)
@@ -350,7 +371,79 @@ local function createMenu()
         toggleSpeedHack(not speedHackEnabled)
         speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
     end)
+
+    -- AÑADIDA: Jump Boost con Slider
+    local jumpBoostButton = Instance.new("TextButton")
+    jumpBoostButton.Size = UDim2.new(0, 180, 0, 40)
+    jumpBoostButton.Position = UDim2.new(0, 20, 0, 260)
+    jumpBoostButton.Text = "Jump Boost: OFF"
+    jumpBoostButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    jumpBoostButton.Parent = playerTab
+    jumpBoostButton.MouseButton1Click:Connect(function()
+        jumpBoostEnabled = not jumpBoostEnabled
+        jumpBoostButton.Text = "Jump Boost: " .. (jumpBoostEnabled and "ON" or "OFF")
+        if jumpBoostEnabled then
+            activateJumpBoost(jumpHeight)
+        else
+            deactivateJumpBoost()
+        end
+    end)
+
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Size = UDim2.new(0, 180, 0, 20)
+    sliderFrame.Position = UDim2.new(0, 20, 0, 310)
+    sliderFrame.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    sliderFrame.Parent = playerTab
+
+    local sliderButton = Instance.new("Frame")
+    sliderButton.Size = UDim2.new(0, 20, 1, 0)
+    sliderButton.Position = UDim2.new(0, 0, 0, 0)
+    sliderButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+    sliderButton.Parent = sliderFrame
+
+    local sliderLabel = Instance.new("TextLabel")
+    sliderLabel.Size = UDim2.new(1, 0, 1, 0)
+    sliderLabel.Text = "Altura: " .. jumpHeight
+    sliderLabel.Font = Enum.Font.SourceSans
+    sliderLabel.TextSize = 14
+    sliderLabel.TextColor3 = Color3.new(1, 1, 1)
+    sliderLabel.BackgroundTransparency = 1
+    sliderLabel.Parent = sliderFrame
+
+    local dragging = false
+    local function updateSlider(input)
+        local x = math.clamp(input.Position.X - sliderFrame.AbsolutePosition.X, 0, sliderFrame.AbsoluteSize.X)
+        local newPosition = x / sliderFrame.AbsoluteSize.X
+        sliderButton.Position = UDim2.new(newPosition, 0, 0, 0)
+        
+        jumpHeight = math.floor(50 + newPosition * 250) -- Rango de 50 a 300
+        sliderLabel.Text = "Altura: " .. jumpHeight
+        
+        if jumpBoostEnabled then
+            activateJumpBoost(jumpHeight)
+        end
+    end
     
+    sliderFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            updateSlider(input)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            updateSlider(input)
+        end
+    end)
+
+
     -- Stealer Tab
     local advancedNoclipButton = Instance.new("TextButton")
     advancedNoclipButton.Size = UDim2.new(0, 180, 0, 40)
@@ -423,6 +516,10 @@ local function onCharacterAdded(character)
     else
         lastMenuInstance = createMenu()
         lastMenuInstance.Parent = LocalPlayer.PlayerGui
+    end
+    -- Restaurar el estado del jump boost si estaba activado
+    if jumpBoostEnabled then
+        activateJumpBoost(jumpHeight)
     end
 end
 
