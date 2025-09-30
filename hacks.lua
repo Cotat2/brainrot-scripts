@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 2.8 - Teleport a Base)
+-- Script con menú estilo Hub para Delta (Versión Final 2.9 - Speed Regulable)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -11,11 +11,16 @@ local lastMenuInstance = nil
 local multipleJumpEnabled = false
 local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
-local speedHackEnabled = false
+local speedHackEnabled = false -- Se mantiene para indicar si se está usando el valor personalizado
 local advancedNoclipEnabled = false
 local teleportToBaseEnabled = false
 local noclipLoop = nil
 local baseLocation = nil
+
+-- Variables para el Speed Hack
+local currentWalkSpeed = 16 -- Valor por defecto de Roblox
+local speedHackSlider = nil
+local speedLabel = nil
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
@@ -119,16 +124,37 @@ local function toggleFakeInvisibility(state)
     end
 end
 
--- Función para activar o desactivar el Speed Hack
+-- Función NUEVA para establecer la velocidad de caminata
+local function setSpeedHackSpeed(speed)
+    currentWalkSpeed = speed
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    -- Establecer la velocidad, sin límites rígidos.
+    humanoid.WalkSpeed = currentWalkSpeed
+    
+    -- Actualizar el texto del slider si existe
+    if speedLabel then
+        speedLabel.Text = "Velocidad: " .. math.floor(currentWalkSpeed)
+    end
+end
+
+-- Función para activar o desactivar el Speed Hack (para el botón de reset)
 local function toggleSpeedHack(state)
     speedHackEnabled = state
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoid = character:WaitForChild("Humanoid")
     
-    if state then
-        humanoid.WalkSpeed = 50
+    if not state then
+        -- Resetear a velocidad por defecto (16)
+        setSpeedHackSpeed(16)
+        if speedHackSlider then
+            -- Mover el slider al valor por defecto para reflejar el estado
+            speedHackSlider.Value = 16
+        end
     else
-        humanoid.WalkSpeed = 16
+        -- Si se activa, usar la velocidad actual del slider
+        setSpeedHackSpeed(speedHackSlider.Value)
     end
 end
 
@@ -179,7 +205,7 @@ local function toggleAdvancedNoclip(state)
                 part.CanCollide = true
             end
         end
-        humanoid.WalkSpeed = 16
+        humanoid.WalkSpeed = currentWalkSpeed -- Usar la velocidad personalizada actual
         if noclipLoop then
             noclipLoop:Disconnect()
             noclipLoop = nil
@@ -341,15 +367,44 @@ local function createMenu()
         ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
     end)
     
-    local speedHackButton = Instance.new("TextButton")
-    speedHackButton.Size = UDim2.new(0, 180, 0, 40)
-    speedHackButton.Position = UDim2.new(0, 20, 0, 200)
-    speedHackButton.Text = "Speed Hack: OFF"
-    speedHackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    speedHackButton.Parent = playerTab
-    speedHackButton.MouseButton1Click:Connect(function()
-        toggleSpeedHack(not speedHackEnabled)
-        speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
+    -- Speed Hack Slider
+    speedLabel = Instance.new("TextLabel")
+    speedLabel.Size = UDim2.new(0, 180, 0, 20)
+    speedLabel.Position = UDim2.new(0, 20, 0, 200)
+    speedLabel.Text = "Velocidad: 16"
+    speedLabel.Font = Enum.Font.SourceSansBold
+    speedLabel.TextSize = 14
+    speedLabel.TextColor3 = Color3.new(1, 1, 1)
+    speedLabel.BackgroundTransparency = 1
+    speedLabel.Parent = playerTab
+
+    speedHackSlider = Instance.new("Slider")
+    speedHackSlider.Size = UDim2.new(0, 180, 0, 20)
+    speedHackSlider.Position = UDim2.new(0, 20, 0, 225)
+    speedHackSlider.Parent = playerTab
+    
+    -- Establece los límites del slider. El límite superior es muy alto
+    -- para simular 'velocidad de la luz' (sin límite real en el código).
+    speedHackSlider.Minimum = 1 -- Velocidad caracol (mínimo jugable)
+    speedHackSlider.Maximum = 1000 -- Máximo muy alto, puedes cambiarlo si quieres más
+    speedHackSlider.Value = 16 -- Valor por defecto
+    
+    -- Conecta el evento de cambio del slider a la nueva función
+    speedHackSlider.Changed:Connect(function(property)
+        if property == "Value" then
+            local newSpeed = math.round(speedHackSlider.Value)
+            setSpeedHackSpeed(newSpeed)
+        end
+    end)
+
+    local speedResetButton = Instance.new("TextButton")
+    speedResetButton.Size = UDim2.new(0, 180, 0, 20)
+    speedResetButton.Position = UDim2.new(0, 20, 0, 250)
+    speedResetButton.Text = "Resetear Velocidad (16)"
+    speedResetButton.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
+    speedResetButton.Parent = playerTab
+    speedResetButton.MouseButton1Click:Connect(function()
+        toggleSpeedHack(false) -- Llama con false para resetear a 16
     end)
     
     -- Stealer Tab
@@ -419,6 +474,10 @@ end
 
 local function onCharacterAdded(character)
     local humanoid = character:WaitForChild("Humanoid")
+    
+    -- Establecer la velocidad de caminata inicial con el valor actual guardado
+    humanoid.WalkSpeed = currentWalkSpeed
+
     if lastMenuInstance then
         lastMenuInstance.Parent = LocalPlayer.PlayerGui
     else
