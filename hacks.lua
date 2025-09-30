@@ -1,5 +1,4 @@
 -- Script con menú estilo Hub para Delta (Versión Final 2.8 - Teleport a Base)
-
 -- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
