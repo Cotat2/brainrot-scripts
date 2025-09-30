@@ -1,11 +1,11 @@
--- Script con menú estilo Hub para Delta (Versión Final 2.9.1 - Regulador Funcional)
+-- Script con menú estilo Hub para Delta (Versión Final 2.9.2 - Inicialización Mejorada)
 
 -- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local lastMenuInstance = nil
+local menuCreated = false -- Nueva variable para controlar la creación del menú
 
 -- Estado de las funciones
 local multipleJumpEnabled = false
@@ -18,12 +18,16 @@ local noclipLoop = nil
 local baseLocation = nil
 
 -- Variables para el Speed Hack
-local currentWalkSpeed = 16 -- Valor por defecto de Roblox
+local currentWalkSpeed = 16 
 local speedHackSlider = nil
 local speedLabel = nil
 
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
+
+-- [MANTENEMOS LAS FUNCIONES toggleMultipleJump, toggleWallhack, toggleFakeInvisibility, setSpeedHackSpeed, toggleSpeedHack, toggleAdvancedNoclip, toggleTeleportToBase SIN CAMBIOS]
+-- Para no duplicar el código, las funciones de las características (salto, speed, noclip, etc.) se mantienen como en la versión 2.9.1.
+-- Solo se modifica la lógica de inicialización y el creador del menú.
 
 -- Función para manejar el Salto Múltiple
 local function handleJump(humanoid)
@@ -238,6 +242,8 @@ end
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
     local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+    
+    -- Limpiar versiones anteriores
     if playerGui:FindFirstChild("HubMenu") then
         playerGui:FindFirstChild("HubMenu"):Destroy()
     end
@@ -390,9 +396,9 @@ local function createMenu()
     
     speedHackSlider.Minimum = 1 
     speedHackSlider.Maximum = 1000
-    speedHackSlider.Value = 16 
-    
-    -- *** LÓGICA CORREGIDA DEL SLIDER ***
+    speedHackSlider.Value = currentWalkSpeed -- Usar el valor actual
+
+    -- LÓGICA CORREGIDA DEL SLIDER
     speedHackSlider:GetPropertyChangedSignal("Value"):Connect(function()
         local newSpeed = math.floor(speedHackSlider.Value)
         setSpeedHackSpeed(newSpeed)
@@ -410,7 +416,7 @@ local function createMenu()
     end)
     yPosition = yPosition + 40
     
-    -- Noclip y TP movidos a Player Tab
+    -- Noclip
     local advancedNoclipButton = Instance.new("TextButton")
     advancedNoclipButton.Size = UDim2.new(0, 180, 0, 40)
     advancedNoclipButton.Position = UDim2.new(0, 20, 0, yPosition)
@@ -423,6 +429,7 @@ local function createMenu()
     end)
     yPosition = yPosition + 60
 
+    -- Teleport a Base
     local teleportToBaseButton = Instance.new("TextButton")
     teleportToBaseButton.Size = UDim2.new(0, 180, 0, 40)
     teleportToBaseButton.Position = UDim2.new(0, 20, 0, yPosition)
@@ -440,9 +447,8 @@ local function createMenu()
             teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
         end
     end)
-    -- Fin de Player Tab
     
-
+    -- Control de Minimizar/Mostrar
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
     hideButton.Position = UDim2.new(1, -25, 0, 5)
@@ -476,26 +482,21 @@ local function createMenu()
 
     local mouse = LocalPlayer:GetMouse()
     mouse.Icon = ""
-    
-    return screenGui
 end
 
-local function onCharacterAdded(character)
-    local humanoid = character:WaitForChild("Humanoid")
-    
-    -- Establecer la velocidad de caminata inicial con el valor actual guardado
-    humanoid.WalkSpeed = currentWalkSpeed
+-- *** LÓGICA DE INICIALIZACIÓN REVISADA Y SIMPLIFICADA ***
+-- Creamos un solo hilo para esperar todo y crear el menú una vez.
+if not menuCreated then
+    -- 1. Esperar al PlayerGui (donde se cargan las interfaces)
+    LocalPlayer:WaitForChild("PlayerGui")
 
-    if lastMenuInstance then
-        lastMenuInstance.Parent = LocalPlayer.PlayerGui
-    else
-        lastMenuInstance = createMenu()
-        lastMenuInstance.Parent = LocalPlayer.PlayerGui
+    -- 2. Esperar al personaje inicial para configurar la velocidad y otros aspectos.
+    -- Esto garantiza que el Humanoid existe cuando se usa setSpeedHackSpeed.
+    if not LocalPlayer.Character then
+        LocalPlayer.CharacterAdded:Wait()
     end
-end
 
-LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
-
-if LocalPlayer.Character then
-    onCharacterAdded(LocalPlayer.Character)
+    -- 3. Crear el menú
+    createMenu()
+    menuCreated = true
 end
