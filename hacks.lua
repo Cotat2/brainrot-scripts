@@ -1,4 +1,4 @@
--- Script con menú estilo Hub para Delta (Versión Final 2.9 - Speed Regulable)
+-- Script con menú estilo Hub para Delta (Versión Final 2.9.1 - Regulador Funcional)
 
 -- Variables principales
 local Players = game:GetService("Players")
@@ -11,7 +11,7 @@ local lastMenuInstance = nil
 local multipleJumpEnabled = false
 local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
-local speedHackEnabled = false -- Se mantiene para indicar si se está usando el valor personalizado
+local speedHackEnabled = false 
 local advancedNoclipEnabled = false
 local teleportToBaseEnabled = false
 local noclipLoop = nil
@@ -124,16 +124,15 @@ local function toggleFakeInvisibility(state)
     end
 end
 
--- Función NUEVA para establecer la velocidad de caminata
+-- Función para establecer la velocidad de caminata
 local function setSpeedHackSpeed(speed)
     currentWalkSpeed = speed
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoid = character:WaitForChild("Humanoid")
     
-    -- Establecer la velocidad, sin límites rígidos.
     humanoid.WalkSpeed = currentWalkSpeed
     
-    -- Actualizar el texto del slider si existe
+    -- Actualizar el texto del slider
     if speedLabel then
         speedLabel.Text = "Velocidad: " .. math.floor(currentWalkSpeed)
     end
@@ -332,10 +331,12 @@ local function createMenu()
 
     changeTab(mainTab)
 
-    -- Player Tab
+    -- Player Tab (Contiene Salto, Wallhack, Invisibilidad, Speed, Noclip y TP)
+    local yPosition = 20
+
     local multipleJumpButton = Instance.new("TextButton")
     multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
-    multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
+    multipleJumpButton.Position = UDim2.new(0, 20, 0, yPosition)
     multipleJumpButton.Text = "Salto Múltiple: OFF"
     multipleJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     multipleJumpButton.Parent = playerTab
@@ -344,10 +345,11 @@ local function createMenu()
         toggleMultipleJump(not multipleJumpEnabled, humanoid)
         multipleJumpButton.Text = "Salto Múltiple: " .. (multipleJumpEnabled and "ON" or "OFF")
     end)
+    yPosition = yPosition + 60
 
     local wallhackButton = Instance.new("TextButton")
     wallhackButton.Size = UDim2.new(0, 180, 0, 40)
-    wallhackButton.Position = UDim2.new(0, 20, 0, 80)
+    wallhackButton.Position = UDim2.new(0, 20, 0, yPosition)
     wallhackButton.Text = "Wallhack (ESP): OFF"
     wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     wallhackButton.Parent = playerTab
@@ -355,10 +357,11 @@ local function createMenu()
         toggleWallhack(not wallhackEnabled)
         wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
     end)
+    yPosition = yPosition + 60
 
     local ghostModeButton = Instance.new("TextButton")
     ghostModeButton.Size = UDim2.new(0, 180, 0, 40)
-    ghostModeButton.Position = UDim2.new(0, 20, 0, 140)
+    ghostModeButton.Position = UDim2.new(0, 20, 0, yPosition)
     ghostModeButton.Text = "Invisibilidad Falsa: OFF"
     ghostModeButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     ghostModeButton.Parent = playerTab
@@ -366,65 +369,66 @@ local function createMenu()
         toggleFakeInvisibility(not fakeInvisibilityEnabled)
         ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
     end)
+    yPosition = yPosition + 60
     
     -- Speed Hack Slider
     speedLabel = Instance.new("TextLabel")
     speedLabel.Size = UDim2.new(0, 180, 0, 20)
-    speedLabel.Position = UDim2.new(0, 20, 0, 200)
+    speedLabel.Position = UDim2.new(0, 20, 0, yPosition)
     speedLabel.Text = "Velocidad: 16"
     speedLabel.Font = Enum.Font.SourceSansBold
     speedLabel.TextSize = 14
     speedLabel.TextColor3 = Color3.new(1, 1, 1)
     speedLabel.BackgroundTransparency = 1
     speedLabel.Parent = playerTab
+    yPosition = yPosition + 25
 
     speedHackSlider = Instance.new("Slider")
     speedHackSlider.Size = UDim2.new(0, 180, 0, 20)
-    speedHackSlider.Position = UDim2.new(0, 20, 0, 225)
+    speedHackSlider.Position = UDim2.new(0, 20, 0, yPosition)
     speedHackSlider.Parent = playerTab
     
-    -- Establece los límites del slider. El límite superior es muy alto
-    -- para simular 'velocidad de la luz' (sin límite real en el código).
-    speedHackSlider.Minimum = 1 -- Velocidad caracol (mínimo jugable)
-    speedHackSlider.Maximum = 1000 -- Máximo muy alto, puedes cambiarlo si quieres más
-    speedHackSlider.Value = 16 -- Valor por defecto
+    speedHackSlider.Minimum = 1 
+    speedHackSlider.Maximum = 1000
+    speedHackSlider.Value = 16 
     
-    -- Conecta el evento de cambio del slider a la nueva función
-    speedHackSlider.Changed:Connect(function(property)
-        if property == "Value" then
-            local newSpeed = math.round(speedHackSlider.Value)
-            setSpeedHackSpeed(newSpeed)
-        end
+    -- *** LÓGICA CORREGIDA DEL SLIDER ***
+    speedHackSlider:GetPropertyChangedSignal("Value"):Connect(function()
+        local newSpeed = math.floor(speedHackSlider.Value)
+        setSpeedHackSpeed(newSpeed)
     end)
+    yPosition = yPosition + 25
 
     local speedResetButton = Instance.new("TextButton")
     speedResetButton.Size = UDim2.new(0, 180, 0, 20)
-    speedResetButton.Position = UDim2.new(0, 20, 0, 250)
+    speedResetButton.Position = UDim2.new(0, 20, 0, yPosition)
     speedResetButton.Text = "Resetear Velocidad (16)"
     speedResetButton.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
     speedResetButton.Parent = playerTab
     speedResetButton.MouseButton1Click:Connect(function()
-        toggleSpeedHack(false) -- Llama con false para resetear a 16
+        toggleSpeedHack(false) 
     end)
+    yPosition = yPosition + 40
     
-    -- Stealer Tab
+    -- Noclip y TP movidos a Player Tab
     local advancedNoclipButton = Instance.new("TextButton")
     advancedNoclipButton.Size = UDim2.new(0, 180, 0, 40)
-    advancedNoclipButton.Position = UDim2.new(0, 20, 0, 20)
+    advancedNoclipButton.Position = UDim2.new(0, 20, 0, yPosition)
     advancedNoclipButton.Text = "Noclip Avanzado: OFF"
     advancedNoclipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    advancedNoclipButton.Parent = stealerTab
+    advancedNoclipButton.Parent = playerTab
     advancedNoclipButton.MouseButton1Click:Connect(function()
         toggleAdvancedNoclip(not advancedNoclipEnabled)
         advancedNoclipButton.Text = "Noclip Avanzado: " .. (advancedNoclipEnabled and "ON" or "OFF")
     end)
+    yPosition = yPosition + 60
 
     local teleportToBaseButton = Instance.new("TextButton")
     teleportToBaseButton.Size = UDim2.new(0, 180, 0, 40)
-    teleportToBaseButton.Position = UDim2.new(0, 20, 0, 80)
+    teleportToBaseButton.Position = UDim2.new(0, 20, 0, yPosition)
     teleportToBaseButton.Text = "Guardar Base"
     teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    teleportToBaseButton.Parent = stealerTab
+    teleportToBaseButton.Parent = playerTab
     teleportToBaseButton.MouseButton1Click:Connect(function()
         if baseLocation == nil then
             toggleTeleportToBase(true)
@@ -432,8 +436,12 @@ local function createMenu()
             teleportToBaseButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
         else
             toggleTeleportToBase(false)
+            teleportToBaseButton.Text = "Guardar Base"
+            teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
         end
     end)
+    -- Fin de Player Tab
+    
 
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
