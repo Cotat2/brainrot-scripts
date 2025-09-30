@@ -1,33 +1,24 @@
--- Script con menú estilo Hub para Delta (Versión Final 2.9.2 - Inicialización Mejorada)
+-- Script con menú estilo Hub para Delta (Versión Final 2.8 - Teleport a Base)
 
 -- Variables principales
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local menuCreated = false -- Nueva variable para controlar la creación del menú
+local lastMenuInstance = nil
 
 -- Estado de las funciones
 local multipleJumpEnabled = false
 local wallhackEnabled = false
 local fakeInvisibilityEnabled = false
-local speedHackEnabled = false 
+local speedHackEnabled = false
 local advancedNoclipEnabled = false
 local teleportToBaseEnabled = false
 local noclipLoop = nil
 local baseLocation = nil
 
--- Variables para el Speed Hack
-local currentWalkSpeed = 16 
-local speedHackSlider = nil
-local speedLabel = nil
-
 -- Variables para la Invisibilidad Falsa
 local ghostClone = nil
-
--- [MANTENEMOS LAS FUNCIONES toggleMultipleJump, toggleWallhack, toggleFakeInvisibility, setSpeedHackSpeed, toggleSpeedHack, toggleAdvancedNoclip, toggleTeleportToBase SIN CAMBIOS]
--- Para no duplicar el código, las funciones de las características (salto, speed, noclip, etc.) se mantienen como en la versión 2.9.1.
--- Solo se modifica la lógica de inicialización y el creador del menú.
 
 -- Función para manejar el Salto Múltiple
 local function handleJump(humanoid)
@@ -128,36 +119,16 @@ local function toggleFakeInvisibility(state)
     end
 end
 
--- Función para establecer la velocidad de caminata
-local function setSpeedHackSpeed(speed)
-    currentWalkSpeed = speed
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local humanoid = character:WaitForChild("Humanoid")
-    
-    humanoid.WalkSpeed = currentWalkSpeed
-    
-    -- Actualizar el texto del slider
-    if speedLabel then
-        speedLabel.Text = "Velocidad: " .. math.floor(currentWalkSpeed)
-    end
-end
-
--- Función para activar o desactivar el Speed Hack (para el botón de reset)
+-- Función para activar o desactivar el Speed Hack
 local function toggleSpeedHack(state)
     speedHackEnabled = state
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoid = character:WaitForChild("Humanoid")
     
-    if not state then
-        -- Resetear a velocidad por defecto (16)
-        setSpeedHackSpeed(16)
-        if speedHackSlider then
-            -- Mover el slider al valor por defecto para reflejar el estado
-            speedHackSlider.Value = 16
-        end
+    if state then
+        humanoid.WalkSpeed = 50
     else
-        -- Si se activa, usar la velocidad actual del slider
-        setSpeedHackSpeed(speedHackSlider.Value)
+        humanoid.WalkSpeed = 16
     end
 end
 
@@ -208,7 +179,7 @@ local function toggleAdvancedNoclip(state)
                 part.CanCollide = true
             end
         end
-        humanoid.WalkSpeed = currentWalkSpeed -- Usar la velocidad personalizada actual
+        humanoid.WalkSpeed = 16
         if noclipLoop then
             noclipLoop:Disconnect()
             noclipLoop = nil
@@ -242,8 +213,6 @@ end
 -- Función que se encarga de crear el menú y su lógica
 local function createMenu()
     local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-    
-    -- Limpiar versiones anteriores
     if playerGui:FindFirstChild("HubMenu") then
         playerGui:FindFirstChild("HubMenu"):Destroy()
     end
@@ -337,12 +306,10 @@ local function createMenu()
 
     changeTab(mainTab)
 
-    -- Player Tab (Contiene Salto, Wallhack, Invisibilidad, Speed, Noclip y TP)
-    local yPosition = 20
-
+    -- Player Tab
     local multipleJumpButton = Instance.new("TextButton")
     multipleJumpButton.Size = UDim2.new(0, 180, 0, 40)
-    multipleJumpButton.Position = UDim2.new(0, 20, 0, yPosition)
+    multipleJumpButton.Position = UDim2.new(0, 20, 0, 20)
     multipleJumpButton.Text = "Salto Múltiple: OFF"
     multipleJumpButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     multipleJumpButton.Parent = playerTab
@@ -351,11 +318,10 @@ local function createMenu()
         toggleMultipleJump(not multipleJumpEnabled, humanoid)
         multipleJumpButton.Text = "Salto Múltiple: " .. (multipleJumpEnabled and "ON" or "OFF")
     end)
-    yPosition = yPosition + 60
 
     local wallhackButton = Instance.new("TextButton")
     wallhackButton.Size = UDim2.new(0, 180, 0, 40)
-    wallhackButton.Position = UDim2.new(0, 20, 0, yPosition)
+    wallhackButton.Position = UDim2.new(0, 20, 0, 80)
     wallhackButton.Text = "Wallhack (ESP): OFF"
     wallhackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     wallhackButton.Parent = playerTab
@@ -363,11 +329,10 @@ local function createMenu()
         toggleWallhack(not wallhackEnabled)
         wallhackButton.Text = "Wallhack (ESP): " .. (wallhackEnabled and "ON" or "OFF")
     end)
-    yPosition = yPosition + 60
 
     local ghostModeButton = Instance.new("TextButton")
     ghostModeButton.Size = UDim2.new(0, 180, 0, 40)
-    ghostModeButton.Position = UDim2.new(0, 20, 0, yPosition)
+    ghostModeButton.Position = UDim2.new(0, 20, 0, 140)
     ghostModeButton.Text = "Invisibilidad Falsa: OFF"
     ghostModeButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
     ghostModeButton.Parent = playerTab
@@ -375,67 +340,36 @@ local function createMenu()
         toggleFakeInvisibility(not fakeInvisibilityEnabled)
         ghostModeButton.Text = "Invisibilidad Falsa: " .. (fakeInvisibilityEnabled and "ON" or "OFF")
     end)
-    yPosition = yPosition + 60
     
-    -- Speed Hack Slider
-    speedLabel = Instance.new("TextLabel")
-    speedLabel.Size = UDim2.new(0, 180, 0, 20)
-    speedLabel.Position = UDim2.new(0, 20, 0, yPosition)
-    speedLabel.Text = "Velocidad: 16"
-    speedLabel.Font = Enum.Font.SourceSansBold
-    speedLabel.TextSize = 14
-    speedLabel.TextColor3 = Color3.new(1, 1, 1)
-    speedLabel.BackgroundTransparency = 1
-    speedLabel.Parent = playerTab
-    yPosition = yPosition + 25
-
-    speedHackSlider = Instance.new("Slider")
-    speedHackSlider.Size = UDim2.new(0, 180, 0, 20)
-    speedHackSlider.Position = UDim2.new(0, 20, 0, yPosition)
-    speedHackSlider.Parent = playerTab
-    
-    speedHackSlider.Minimum = 1 
-    speedHackSlider.Maximum = 1000
-    speedHackSlider.Value = currentWalkSpeed -- Usar el valor actual
-
-    -- LÓGICA CORREGIDA DEL SLIDER
-    speedHackSlider:GetPropertyChangedSignal("Value"):Connect(function()
-        local newSpeed = math.floor(speedHackSlider.Value)
-        setSpeedHackSpeed(newSpeed)
+    local speedHackButton = Instance.new("TextButton")
+    speedHackButton.Size = UDim2.new(0, 180, 0, 40)
+    speedHackButton.Position = UDim2.new(0, 20, 0, 200)
+    speedHackButton.Text = "Speed Hack: OFF"
+    speedHackButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+    speedHackButton.Parent = playerTab
+    speedHackButton.MouseButton1Click:Connect(function()
+        toggleSpeedHack(not speedHackEnabled)
+        speedHackButton.Text = "Speed Hack: " .. (speedHackEnabled and "ON" or "OFF")
     end)
-    yPosition = yPosition + 25
-
-    local speedResetButton = Instance.new("TextButton")
-    speedResetButton.Size = UDim2.new(0, 180, 0, 20)
-    speedResetButton.Position = UDim2.new(0, 20, 0, yPosition)
-    speedResetButton.Text = "Resetear Velocidad (16)"
-    speedResetButton.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
-    speedResetButton.Parent = playerTab
-    speedResetButton.MouseButton1Click:Connect(function()
-        toggleSpeedHack(false) 
-    end)
-    yPosition = yPosition + 40
     
-    -- Noclip
+    -- Stealer Tab
     local advancedNoclipButton = Instance.new("TextButton")
     advancedNoclipButton.Size = UDim2.new(0, 180, 0, 40)
-    advancedNoclipButton.Position = UDim2.new(0, 20, 0, yPosition)
+    advancedNoclipButton.Position = UDim2.new(0, 20, 0, 20)
     advancedNoclipButton.Text = "Noclip Avanzado: OFF"
     advancedNoclipButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    advancedNoclipButton.Parent = playerTab
+    advancedNoclipButton.Parent = stealerTab
     advancedNoclipButton.MouseButton1Click:Connect(function()
         toggleAdvancedNoclip(not advancedNoclipEnabled)
         advancedNoclipButton.Text = "Noclip Avanzado: " .. (advancedNoclipEnabled and "ON" or "OFF")
     end)
-    yPosition = yPosition + 60
 
-    -- Teleport a Base
     local teleportToBaseButton = Instance.new("TextButton")
     teleportToBaseButton.Size = UDim2.new(0, 180, 0, 40)
-    teleportToBaseButton.Position = UDim2.new(0, 20, 0, yPosition)
+    teleportToBaseButton.Position = UDim2.new(0, 20, 0, 80)
     teleportToBaseButton.Text = "Guardar Base"
     teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-    teleportToBaseButton.Parent = playerTab
+    teleportToBaseButton.Parent = stealerTab
     teleportToBaseButton.MouseButton1Click:Connect(function()
         if baseLocation == nil then
             toggleTeleportToBase(true)
@@ -443,12 +377,9 @@ local function createMenu()
             teleportToBaseButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
         else
             toggleTeleportToBase(false)
-            teleportToBaseButton.Text = "Guardar Base"
-            teleportToBaseButton.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
         end
     end)
-    
-    -- Control de Minimizar/Mostrar
+
     local hideButton = Instance.new("TextButton")
     hideButton.Size = UDim2.new(0, 20, 0, 20)
     hideButton.Position = UDim2.new(1, -25, 0, 5)
@@ -482,21 +413,22 @@ local function createMenu()
 
     local mouse = LocalPlayer:GetMouse()
     mouse.Icon = ""
+    
+    return screenGui
 end
 
--- *** LÓGICA DE INICIALIZACIÓN REVISADA Y SIMPLIFICADA ***
--- Creamos un solo hilo para esperar todo y crear el menú una vez.
-if not menuCreated then
-    -- 1. Esperar al PlayerGui (donde se cargan las interfaces)
-    LocalPlayer:WaitForChild("PlayerGui")
-
-    -- 2. Esperar al personaje inicial para configurar la velocidad y otros aspectos.
-    -- Esto garantiza que el Humanoid existe cuando se usa setSpeedHackSpeed.
-    if not LocalPlayer.Character then
-        LocalPlayer.CharacterAdded:Wait()
+local function onCharacterAdded(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    if lastMenuInstance then
+        lastMenuInstance.Parent = LocalPlayer.PlayerGui
+    else
+        lastMenuInstance = createMenu()
+        lastMenuInstance.Parent = LocalPlayer.PlayerGui
     end
+end
 
-    -- 3. Crear el menú
-    createMenu()
-    menuCreated = true
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
 end
