@@ -1,70 +1,69 @@
--- FE Ultra Fling & Object Mover (Versión Corregida)
+-- SCRIPT REPARADO Y SIMPLIFICADO (100% FE)
+print("Iniciando carga del script...")
+
 local Player = game.Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
-local Mouse = Player:GetMouse()
+local UserInputService = game:GetService("UserInputService")
 
--- Configuración de Poder
-local FlingPower = 5000 -- Poder para lanzar objetos
-local AuraActive = false
-local ObjectFlingActive = false
+-- Variables de estado
+local auraActiva = false
+local lanzadorObjetos = false
+local fuerza = 8000 -- Aumentado para que se note el impacto
 
--- 1. SOLUCIÓN TECLA T (Object Fling Mejorado)
--- En lugar de rotar, aplica fuerza de empuje directa
-Mouse.KeyDown:connect(function(key)
-    if key:lower() == "t" then
-        ObjectFlingActive = not ObjectFlingActive
-        if ObjectFlingActive then
-            print("Object Fling: ACTIVADO (Buscando piezas sueltas...)")
-            -- Bucle de fuerza
-            while ObjectFlingActive do
-                for _, part in pairs(game.Workspace:GetDescendants()) do
-                    if part:IsA("BasePart") and not part:IsDescendantOf(Character) then
-                        -- Solo afecta a partes que NO estén ancladas y estén cerca (100 studs)
-                        if part.Anchored == false and (part.Position - Character.HumanoidRootPart.Position).Magnitude < 100 then
-                            part.Velocity = Vector3.new(0, FlingPower/10, 0) -- Un pequeño salto
-                            local thrust = Instance.new("BodyThrust", part)
-                            thrust.Force = Vector3.new(FlingPower, FlingPower, FlingPower)
-                            thrust.Location = part.Position
-                            game:GetService("Debris"):AddItem(thrust, 0.1) -- Desaparece rápido para no laggear
+-- 1. CREACIÓN DEL AURA FÍSICA (Tecla L)
+local Aura = Instance.new("Part")
+Aura.Name = "AuraPesada"
+Aura.Parent = Character
+Aura.Size = Vector3.new(12, 12, 12)
+Aura.Transparency = 0.8 -- Un poco visible para que sepas que está ahí (puedes poner 1 luego)
+Aura.Color = Color3.fromRGB(255, 255, 0)
+Aura.CanCollide = false
+Aura.CanTouch = true
+
+local Weld = Instance.new("Weld", Aura)
+Weld.Part0 = Character:WaitForChild("HumanoidRootPart")
+Weld.Part1 = Aura
+
+-- Propiedad física extrema para mover cosas
+local PropiedadFisica = PhysicalProperties.new(100, 0.3, 0.5, 100, 100)
+
+-- 2. DETECCIÓN DE TECLAS (REPARADA)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end -- No se activa si escribes en el chat
+
+    -- TECLA L: Activar/Desactivar Aura
+    if input.KeyCode == Enum.KeyCode.L then
+        auraActiva = not auraActiva
+        Aura.CanCollide = auraActiva
+        if auraActiva then
+            Aura.CustomPhysicalProperties = PropiedadFisica
+            print("AURA: ACTIVADA (Modo bola de demolición)")
+        else
+            print("AURA: DESACTIVADA")
+        end
+    end
+
+    -- TECLA T: Lanzar objetos cercanos
+    if input.KeyCode == Enum.KeyCode.T then
+        lanzadorObjetos = not lanzadorObjetos
+        print("LANZADOR: " .. (lanzadorObjetos and "ACTIVADO" or "DESACTIVADO"))
+        
+        task.spawn(function()
+            while lanzadorObjetos do
+                for _, pieza in pairs(workspace:GetDescendants()) do
+                    if pieza:IsA("BasePart") and not pieza:IsDescendantOf(Character) then
+                        -- Solo piezas sueltas y cerca tuyo
+                        if pieza.Anchored == false and (pieza.Position - Character.HumanoidRootPart.Position).Magnitude < 80 then
+                            -- Empujón violento
+                            pieza.Velocity = Vector3.new(0, 50, 0) + (pieza.Position - Character.HumanoidRootPart.Position).Unit * fuerza
                         end
                     end
                 end
-                task.wait(0.1)
+                task.wait(0.2)
             end
-        else
-            print("Object Fling: DESACTIVADO")
-        end
+        end)
     end
 end)
 
--- 2. SOLUCIÓN TECLA L (Aura de Colisión FE)
--- Creamos una pieza invisible con densidad máxima
-local FlingPart = Instance.new("Part", Character)
-FlingPart.Name = "FE_Aura"
-FlingPart.Transparency = 1
-FlingPart.CanCollide = false -- La activamos por código
-FlingPart.Size = Vector3.new(15, 15, 15)
-local Weld = Instance.new("Weld", FlingPart)
-Weld.Part0 = Character.HumanoidRootPart
-Weld.Part1 = FlingPart
-
-local CustomPhys = PhysicalProperties.new(100, 0.3, 0.5, 100, 100) -- DENSIDAD AL MÁXIMO
-
-Mouse.KeyDown:connect(function(key)
-    if key:lower() == "l" then
-        AuraActive = not AuraActive
-        if AuraActive then
-            FlingPart.CanCollide = true
-            FlingPart.CustomPhysicalProperties = CustomPhys
-            print("Aura Física: ACTIVADA")
-        else
-            FlingPart.CanCollide = false
-            print("Aura Física: DESACTIVADA")
-        end
-    end
-end)
-
--- 3. Vuelo (Tecla F) y Dropkick (Tecla Q) se mantienen por ser 100% FE
--- [Aquí iría el resto de tu código base de vuelo y animación]
-
-print("Script Cargado: T para Objetos (FE), L para Aura Pesada.")
+print("¡SCRIPT CARGADO EXITOSAMENTE!")
+print("Usa L para el escudo físico y T para lanzar escombros.")
