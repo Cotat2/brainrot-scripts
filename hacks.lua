@@ -1,74 +1,170 @@
--- REESCRITURA TOTAL: hacks.lua (100% FE COMPATIBLE)
-local Player = game.Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local p = game.Players.LocalPlayer
 
--- CONFIGURACIÓN DE PODER
-local flingPower = 10000 -- Fuerza para mandar todo a volar
-local activeAura = false
-local activeT = false
+-- Variables de estado
+local flyActivo = false
+local flingActivo = false
+local objetoFlingActivo = false
+local conexionFly
+local conexionFling
+local conexionObjetos
 
--- 1. CREAR EL OBJETO FÍSICO (AURA L)
--- Creamos una pieza invisible unida a ti con densidad extrema
-local AuraPart = Instance.new("Part")
-AuraPart.Name = "AuraFisica"
-AuraPart.Parent = Character
-AuraPart.Size = Vector3.new(12, 12, 12)
-AuraPart.Transparency = 1 -- Totalmente invisible
-AuraPart.CanCollide = false
-AuraPart.Massless = false
+-- === FUNCIÓN DROPKICK (Q) ===
+local function ejecutarDropkick()
+    local char = p.Character
+    if not char or not char:FindFirstChild("Humanoid") then return end
+    
+    local hum = char.Humanoid
+    local pie = char:FindFirstChild("RightFoot") or char:FindFirstChild("Right Leg")
+    if not pie then return end
 
-local Weld = Instance.new("Weld", AuraPart)
-Weld.Part0 = Character:WaitForChild("HumanoidRootPart")
-Weld.Part1 = AuraPart
+    -- 1. Reproducir Animación
+    local anim = Instance.new("Animation")
+    anim.AnimationId = "rbxassetid://2406323247"
+    local loadAnim = hum:LoadAnimation(anim)
+    loadAnim:Play()
 
--- 2. FUNCIÓN DE LA TECLA T (LANZAR MAPA ROTO)
--- Buscamos partes sueltas y les aplicamos un impulso masivo
-local function launchObjects()
-    for _, part in pairs(workspace:GetDescendants()) do
-        if part:IsA("BasePart") and not part:IsDescendantOf(Character) then
-            if part.Anchored == false then
-                local dist = (part.Position - Character.HumanoidRootPart.Position).Magnitude
-                if dist < 70 then -- Radio de acción
-                    part.Velocity = (part.Position - Character.HumanoidRootPart.Position).Unit * 150 + Vector3.new(0, 50, 0)
-                    local force = Instance.new("BodyForce", part)
-                    force.Force = Vector3.new(0, part:GetMass() * 196.2, 0) + (part.Position - Character.HumanoidRootPart.Position).Unit * flingPower
-                    game:GetService("Debris"):AddItem(force, 0.2)
-                end
-            end
+    -- 2. Crear Hitbox Invisible
+    local hitbox = Instance.new("Part")
+    hitbox.Name = "DropkickHitbox"
+    hitbox.Size = Vector3.new(6, 6, 6)
+    hitbox.Transparency = 1
+    hitbox.CanCollide = true
+    hitbox.Massless = false
+    -- Densidad máxima para impacto total
+    hitbox.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
+    hitbox.Parent = char
+
+    local weld = Instance.new("Weld")
+    weld.Part0 = pie
+    weld.Part1 = hitbox
+    weld.C0 = CFrame.new(0, -1, 0)
+    weld.Parent = hitbox
+
+    -- 3. Lógica de Impacto (.Touched)
+    local haGolpeado = false
+    hitbox.Touched:Connect(function(hit)
+        if haGolpeado or hit:IsDescendantOf(char) then return end
+        
+        local rootHit = hit.Parent:FindFirstChild("HumanoidRootPart") or hit
+        if rootHit then
+            haGolpeado = true
+            local direccion = workspace.CurrentCamera.CFrame.LookVector
+            
+            -- Aplicar fuerza masiva basada en la cámara
+            local bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.Velocity = (direccion * 200) + Vector3.new(0, 50, 0) -- Empuje frontal y hacia arriba
+            bv.Parent = rootHit
+            
+            game:GetService("Debris"):AddItem(bv, 0.5) -- La fuerza dura medio segundo
         end
-    end
+    end)
+
+    -- Limpieza de la hitbox tras la patada
+    game:GetService("Debris"):AddItem(hitbox, 0.8)
 end
 
--- 3. DETECTAR TECLAS
-UIS.InputBegan:Connect(function(input, chat)
-    if chat then return end
+-- === FUNCIONES ANTERIORES (F, L, T, Y) ===
+
+local function cargarInfiniteYield()
+    pcall(function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+    end)
+end
+
+local function activarObjetoFling()
+    if conexionObjetos then conexionObjetos:Disconnect() end
+    conexionObjetos = RunService.Heartbeat:Connect(function()
+        if not objetoFlingActivo then return end
+        local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        local partes = workspace:GetPartBoundsInRadius(root.Position, 500)
+        for _, obj in pairs(partes) do
+            if obj:IsA("BasePart") and not obj.Parent:FindFirstChild("Humanoid") and not obj.Anchored then
+                obj.AngularVelocity = Vector3.new(0, 99999, 0)
+                obj.Velocity = obj.Velocity + Vector3.new(0, 5, 0)
+            end
+        end
+    end)
+end
+
+local function activarFling()
+    local c = p.Character
+    if not c or not c:FindFirstChild("HumanoidRootPart") then return end
+    local root = c.HumanoidRootPart
     
-    -- Tecla L: Aura de Choque
-    if input.KeyCode == Enum.KeyCode.L then
-        activeAura = not activeAura
-        AuraPart.CanCollide = activeAura
-        AuraPart.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 100, 100)
-        print("Aura: " .. (activeAura and "ON" or "OFF"))
+    local reach = Instance.new("Part", c)
+    reach.Name = "FlingReach"; reach.Size = Vector3.new(45, 2, 45); reach.Transparency = 1
+    reach.CanCollide = true; reach.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
+    
+    local weld = Instance.new("Weld", reach)
+    weld.Part0 = root; weld.Part1 = reach
+
+    local bgv = Instance.new("BodyAngularVelocity", root)
+    bgv.Name = "FlingForce"; bgv.MaxTorque = Vector3.new(math.huge, math.huge, math.huge); bgv.AngularVelocity = Vector3.new(0, 999999, 0) 
+
+    local bv = Instance.new("BodyVelocity", root)
+    bv.Name = "FlingAnchor"; bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge); bv.Velocity = Vector3.new(0, 0, 0)
+
+    conexionFling = RunService.Stepped:Connect(function()
+        c.Humanoid.PlatformStand = true
+        for _, part in pairs(c:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "FlingReach" then part.CanCollide = false end
+        end
+    end)
+end
+
+local function limpiarFling()
+    if p.Character then
+        for _, v in pairs(p.Character:GetDescendants()) do
+            if v.Name == "FlingForce" or v.Name == "FlingAnchor" or v.Name == "FlingReach" then v:Destroy() end
+        end
     end
+    if conexionFling then conexionFling:Disconnect() end
+end
+
+local function activarFly()
+    local c = p.Character
+    if not c or not c:FindFirstChild("HumanoidRootPart") then return end
+    local root = c.HumanoidRootPart
+    local bvFly = Instance.new("BodyVelocity", root); bvFly.Name = "AdminFly"; bvFly.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    local bgFly = Instance.new("BodyGyro", root); bgFly.Name = "AdminGyro"; bgFly.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    conexionFly = RunService.RenderStepped:Connect(function()
+        if not flyActivo then return end
+        local cam = workspace.CurrentCamera.CFrame
+        local moveDir = Vector3.new(0,0,0)
+        if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.RightVector end
+        bvFly.Velocity = moveDir * 50; bgFly.CFrame = cam
+    end)
+end
+
+-- === DETECTOR DE TECLAS ===
+UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
     
-    -- Tecla T: Lanzar Escombros
-    if input.KeyCode == Enum.KeyCode.T then
-        activeT = not activeT
-        print("Modo Lanzar: " .. (activeT and "ON" or "OFF"))
+    if input.KeyCode == Enum.KeyCode.Q then -- DROPKICK
+        ejecutarDropkick()
+    elseif input.KeyCode == Enum.KeyCode.F then -- FLY
+        flyActivo = not flyActivo
+        if flyActivo then activarFly() else 
+            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                if p.Character.HumanoidRootPart:FindFirstChild("AdminFly") then p.Character.HumanoidRootPart.AdminFly:Destroy() end
+                if p.Character.HumanoidRootPart:FindFirstChild("AdminGyro") then p.Character.HumanoidRootPart.AdminGyro:Destroy() end
+            end
+            if conexionFly then conexionFly:Disconnect() end
+        end
+    elseif input.KeyCode == Enum.KeyCode.L then -- FLING
+        flingActivo = not flingActivo
+        if flingActivo then activarFling() else limpiarFling() end
+    elseif input.KeyCode == Enum.KeyCode.T then -- OBJ FLING
+        objetoFlingActivo = not objetoFlingActivo
+        if objetoFlingActivo then activarObjetoFling() end
+    elseif input.KeyCode == Enum.KeyCode.Y then -- ADMIN
+        cargarInfiniteYield()
     end
 end)
-
--- Bucle de ejecución constante
-RunService.Heartbeat:Connect(function()
-    if activeT then
-        launchObjects()
-    end
-    -- Anti-caída para el personaje cuando el aura está activa
-    if activeAura then
-        Character.Humanoid:ChangeState(11)
-    end
-end)
-
-print("--- SCRIPT REPARADO CARGADO ---")
